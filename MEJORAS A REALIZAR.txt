@@ -1,0 +1,5 @@
+cuando el limite de la tarjeta es de 1.000.000 y la deuda es de 1.000.000 no se esta sumando los intereses
+
+validar el campo de intereses de la tarjeta para que solo deje ingresar del 1-100 y hacer campos required
+
+hacer notificaciones que el crud de tarjetas me notifique cuando una tarjeta se tiene que pagar hoy o mañana o pronto (4 dias) y tambien que me notifique que paso atrasado y que se me han aplicado intereses
