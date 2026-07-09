@@ -549,4 +549,41 @@ const toggleAuth = () => {
     width: 0%;
     transition: width 0.3s, background-color 0.3s;
 }
+
+/* ── Responsive Login ── */
+@media (max-width: 560px) {
+    .auth-page {
+        padding: 16px;
+    }
+    .auth-box {
+        padding: 24px 20px;
+        border-radius: 18px;
+    }
+    .auth-container.show-register {
+        max-width: 100%;
+    }
+    .title {
+        font-size: 1.4rem;
+    }
+    .subtitle {
+        font-size: .82rem;
+        margin-bottom: 24px;
+    }
+    .logo {
+        font-size: 1.3rem;
+        margin-bottom: 24px;
+    }
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+    .form-control {
+        padding: 10px 14px;
+        font-size: .9rem;
+    }
+    .btn-primary {
+        padding: 12px;
+        font-size: .92rem;
+    }
+}
 </style>

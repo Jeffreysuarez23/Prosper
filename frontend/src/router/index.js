@@ -19,11 +19,11 @@ const router = createRouter({
       children: [
         { path: '', name: 'dashboard', component: DashboardView },
         { path: 'movimientos', name: 'movimientos', component: () => import('../views/MovimientosView.vue') },
-        { path: 'estadisticas', name: 'estadisticas', component: () => import('../views/EstadisticasView.vue') },
+        { path: 'estadisticas', name: 'estadisticas', component: () => import('../views/EstadisticasView.vue'), meta: { requiresPro: true } },
         { path: 'objetivos', name: 'objetivos', component: () => import('../views/ObjetivosView.vue') },
-        { path: 'gastos-fijos', name: 'gastos-fijos', component: () => import('../views/GastosFijosView.vue') },
-        { path: 'tarjetas-credito', name: 'tarjetas-credito', component: () => import('../views/TarjetasCreditoView.vue') },
-        { path: 'notificaciones', name: 'notificaciones', component: () => import('../views/NotificacionesView.vue') },
+        { path: 'gastos-fijos', name: 'gastos-fijos', component: () => import('../views/GastosFijosView.vue'), meta: { requiresPro: true } },
+        { path: 'tarjetas-credito', name: 'tarjetas-credito', component: () => import('../views/TarjetasCreditoView.vue'), meta: { requiresPro: true } },
+        { path: 'notificaciones', name: 'notificaciones', component: () => import('../views/NotificacionesView.vue'), meta: { requiresPro: true } },
         { path: 'perfil', name: 'perfil', component: () => import('../views/PerfilView.vue') },
       ]
     }
@@ -35,11 +35,36 @@ router.beforeEach((to, from, next) => {
   
   if (to.meta.requiresAuth && !token) {
     next({ name: 'login' });
-  } else if (to.meta.requiresGuest && token) {
+    return;
+  } 
+  
+  if (to.meta.requiresGuest && token) {
     next({ name: 'dashboard' });
-  } else {
-    next();
+    return;
   }
+  
+  if (to.meta.requiresPro) {
+    const userStr = localStorage.getItem('user');
+    let plan = 'gratis';
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        plan = user.membresia?.plan || 'gratis';
+      } catch(e) {}
+    }
+    
+    if (plan === 'gratis') {
+      window.dispatchEvent(new CustomEvent('open-membership-modal'));
+      if (from.name) {
+        next(false); // Cancel navigation and stay on current page
+      } else {
+        next({ name: 'dashboard' }); // Redirect to dashboard if loading directly
+      }
+      return;
+    }
+  }
+  
+  next();
 })
 
 export default router

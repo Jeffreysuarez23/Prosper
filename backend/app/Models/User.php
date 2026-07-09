@@ -75,4 +75,19 @@ class User extends Authenticatable
     {
         return $this->hasMany(TarjetaCredito::class);
     }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    public function membresia()
+    {
+        return $this->hasOne(Membresia::class)->whereIn('status', ['active']);
+    }
+
+    public function getPlanAttribute()
+    {
+        return $this->membresia ? $this->membresia->plan : 'gratis';
+    }
 }

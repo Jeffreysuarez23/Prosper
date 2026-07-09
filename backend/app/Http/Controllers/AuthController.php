@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Membresia;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -25,6 +26,14 @@ class AuthController extends Controller
             'role_id' => 2, // Default user role
             'tema_preferido' => 'light'
         ]);
+
+        Membresia::create([
+            'user_id' => $user->id,
+            'plan' => 'gratis',
+            'status' => 'active'
+        ]);
+
+        $user->load('membresia');
 
         return response()->json([
             'message' => 'Usuario creado exitosamente',
@@ -48,6 +57,8 @@ class AuthController extends Controller
             ]);
         }
 
+        $user->load('membresia');
+
         return response()->json([
             'token' => $user->createToken('auth_token')->plainTextToken,
             'user' => $user
@@ -65,6 +76,8 @@ class AuthController extends Controller
 
     public function user(Request $request)
     {
-        return response()->json($request->user());
+        $user = $request->user();
+        $user->load('membresia');
+        return response()->json($user);
     }
 }

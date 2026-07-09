@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, provide } from 'vue'
+import { ref, onMounted, provide, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '../services/api'
 import Swal from 'sweetalert2'
@@ -8,6 +8,19 @@ const router = useRouter()
 const route = useRoute()
 const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
 const refreshKey = ref(0) // Usado para recargar la vista hija sin recargar la página
+
+const showMembershipModal = ref(false)
+const billingCycle = ref('monthly')
+const isSidebarOpen = ref(false)
+
+const userPlan = computed(() => user.value.membresia?.plan || 'gratis')
+
+const handleNavClick = (e, featureLevel) => {
+  if (featureLevel === 'pro' && userPlan.value === 'gratis') {
+    e.preventDefault()
+    showMembershipModal.value = true
+  }
+}
 
 // Obtener inicial
 const userInicial = user.value.name ? user.value.name.charAt(0).toUpperCase() : 'U'
@@ -185,15 +198,19 @@ const handleSaveTx = async () => {
     // Refresh current child view without reloading the page
     refreshKey.value++
   } catch (error) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'No se pudo guardar el movimiento.',
-      background: 'var(--surface)',
-      color: 'var(--text)',
-      confirmButtonColor: 'var(--accent)',
-      customClass: { popup: 'swal-custom-popup' }
-    })
+    if (error.response && error.response.status === 403 && error.response.data.message) {
+      // The global api.js interceptor will handle this and show the alert
+    } else {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo guardar el movimiento.',
+        background: 'var(--surface)',
+        color: 'var(--text)',
+        confirmButtonColor: 'var(--accent)',
+        customClass: { popup: 'swal-custom-popup' }
+      })
+    }
   }
 }
 
@@ -215,26 +232,45 @@ const fetchHeaderBalance = async () => {
 provide('refreshHeaderBalance', fetchHeaderBalance)
 provide('headerBalance', headerBalance)
 
-onMounted(() => {
+onMounted(async () => {
   fetchHeaderBalance()
+  
+  // Refresh user data from server to keep membership updated
+  try {
+    const userRes = await api.get('/user')
+    user.value = userRes.data
+    localStorage.setItem('user', JSON.stringify(userRes.data))
+  } catch (error) {
+    console.error('Error fetching user data:', error)
+  }
+  
+  window.addEventListener('open-membership-modal', () => {
+    showMembershipModal.value = true
+  })
 })
 
 </script>
 
 <template>
   <div class="app">
+    <div v-if="isSidebarOpen" class="sidebar-overlay" @click="isSidebarOpen = false" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; display: block; backdrop-filter: blur(2px);"></div>
     <!-- ============ SIDEBAR ============ -->
-    <aside class="sidebar" id="sidebar">
-      <div class="brand">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="20" height="20">
-            <path d="M4 18 L9 10 L13 14 L20 4" stroke="currentColor" stroke-width="2.4" fill="none"
-              stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+    <aside class="sidebar" id="sidebar" :class="{ 'is-open': isSidebarOpen }">
+      <div class="brand" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20">
+              <path d="M4 18 L9 10 L13 14 L20 4" stroke="currentColor" stroke-width="2.4" fill="none"
+                stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <span class="brand-name">Prosper</span>
+        </div>
+        <span style="font-size: 0.65rem; text-transform: uppercase; font-weight: bold; padding: 2px 8px; border-radius: 12px; background: var(--surface-2); color: var(--accent); letter-spacing: 1px;">
+          Plan {{ userPlan }}
         </span>
-        <span class="brand-name">Prosper</span>
       </div>
-      <nav class="nav" aria-label="Navegación principal">
+      <nav class="nav" aria-label="Navegación principal" @click="isSidebarOpen = false">
         <RouterLink class="nav-item" to="/" exact-active-class="is-active">
           <svg class="nav-icon" viewBox="0 0 24 24">
             <path d="M4 12 L12 4 L20 12 M6 10 V20 H18 V10" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -249,7 +285,7 @@ onMounted(() => {
           </svg>
           <span>Movimientos</span>
         </RouterLink>
-        <RouterLink class="nav-item" to="/estadisticas" active-class="is-active">
+        <RouterLink class="nav-item" to="/estadisticas" active-class="is-active" :class="{ 'is-disabled': userPlan === 'gratis' }" @click="handleNavClick($event, 'pro')">
           <svg class="nav-icon" viewBox="0 0 24 24">
             <path d="M5 20V10M12 20V4M19 20v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
           </svg>
@@ -263,7 +299,7 @@ onMounted(() => {
           </svg>
           <span>Objetivos</span>
         </RouterLink>
-        <RouterLink class="nav-item" to="/gastos-fijos" active-class="is-active">
+        <RouterLink class="nav-item" to="/gastos-fijos" active-class="is-active" :class="{ 'is-disabled': userPlan === 'gratis' }" @click="handleNavClick($event, 'pro')">
           <svg class="nav-icon" viewBox="0 0 24 24">
             <rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8" />
             <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="1.8" />
@@ -271,7 +307,7 @@ onMounted(() => {
           </svg>
           <span>Gastos Fijos</span>
         </RouterLink>
-        <RouterLink class="nav-item" to="/tarjetas-credito" active-class="is-active">
+        <RouterLink class="nav-item" to="/tarjetas-credito" active-class="is-active" :class="{ 'is-disabled': userPlan === 'gratis' }" @click="handleNavClick($event, 'pro')">
           <svg class="nav-icon" viewBox="0 0 24 24">
             <rect x="2" y="5" width="20" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.8" />
             <path d="M2 10h20" stroke="currentColor" stroke-width="1.8" />
@@ -280,13 +316,13 @@ onMounted(() => {
           </svg>
           <span>Tarjetas de credito</span>
         </RouterLink>
-        <RouterLink class="nav-item" to="/notificaciones" active-class="is-active">
+        <RouterLink class="nav-item" to="/notificaciones" active-class="is-active" :class="{ 'is-disabled': userPlan === 'gratis' }" @click="handleNavClick($event, 'pro')">
           <svg class="nav-icon" viewBox="0 0 24 24">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           <span>Notificaciones</span>
-          <span v-if="unreadNotifs > 0" class="badge" style="margin-left: auto; background: var(--red); color: white;">{{ unreadNotifs > 9 ? '9+' : unreadNotifs }}</span>
+          <span v-if="unreadNotifs > 0 && userPlan !== 'gratis'" class="badge" style="margin-left: auto; background: var(--red); color: white;">{{ unreadNotifs > 9 ? '9+' : unreadNotifs }}</span>
         </RouterLink>
       </nav>
       <div class="sidebar-foot" style="display:flex; justify-content:center; gap:12px; margin-bottom: 20px;">
@@ -297,10 +333,10 @@ onMounted(() => {
     </aside>
 
     <!-- ============ MAIN ============ -->
-    <main class="main">
-      <header class="topbar">
+    <main class="main" @click="isSidebarOpen = false">
+      <header class="topbar" @click.stop>
         <div class="topbar-left">
-          <button class="hamburger" id="menuToggle" aria-label="Menú">
+          <button class="hamburger" id="menuToggle" aria-label="Menú" @click.stop="isSidebarOpen = !isSidebarOpen">
             <svg viewBox="0 0 24 24" width="22" height="22">
               <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
             </svg>
@@ -337,6 +373,10 @@ onMounted(() => {
                 <svg viewBox="0 0 24 24" width="16" height="16"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="2"/></svg>
                 Mi Perfil
               </RouterLink>
+              <a href="#" @click.prevent="showMembershipModal = true" class="dropdown-item" style="color: var(--accent);">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                Membresía
+              </a>
               <div class="dropdown-divider"></div>
               <a href="#" @click.prevent="handleLogout" class="dropdown-item text-red">
                 <svg viewBox="0 0 24 24" width="16" height="16"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="16 17 21 12 16 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -433,5 +473,164 @@ onMounted(() => {
         </form>
       </div>
     </div>
+    <!-- ============ MODAL: MEMBRESÍAS ============ -->
+    <div class="modal" :class="{ 'is-active': showMembershipModal }">
+      <div class="modal-content" style="max-width: 900px; padding: 1.5rem; position: relative;">
+        <div class="modal-head" style="margin-bottom: 1rem; border-bottom: none;">
+          <div class="head-text" style="text-align: center; width: 100%;">
+            <h2 style="font-size: 1.8rem; margin-bottom: 0.25rem; background: -webkit-linear-gradient(45deg, var(--accent), #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Sube de nivel</h2>
+            <p style="color: var(--text-muted); font-size: 1rem;">Elige la membresía que mejor se adapte a tus necesidades financieras.</p>
+          </div>
+          <button class="modal-close" @click="showMembershipModal = false" aria-label="Cerrar" style="position: absolute; top: 1rem; right: 1rem;">
+            <svg viewBox="0 0 24 24" width="24" height="24">
+              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+        
+        <div style="display: flex; justify-content: center; margin-bottom: 2rem; align-items: center; gap: 12px;">
+          <span :style="{ color: billingCycle === 'monthly' ? 'var(--text)' : 'var(--text-muted)', fontWeight: billingCycle === 'monthly' ? 'bold' : 'normal', transition: 'color 0.3s' }">Mensual</span>
+          <label style="position: relative; display: inline-block; width: 50px; height: 26px;">
+            <input type="checkbox" :checked="billingCycle === 'annual'" @change="billingCycle = $event.target.checked ? 'annual' : 'monthly'" style="opacity: 0; width: 0; height: 0;">
+            <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--surface-2); border: 1px solid var(--border); transition: .4s; border-radius: 34px;">
+              <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: var(--accent); transition: .4s; border-radius: 50%;" :style="billingCycle === 'annual' ? 'transform: translateX(24px)' : ''"></span>
+            </span>
+          </label>
+          <span :style="{ color: billingCycle === 'annual' ? 'var(--text)' : 'var(--text-muted)', fontWeight: billingCycle === 'annual' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: '6px', transition: 'color 0.3s' }">
+            Anual 
+            <span style="background: rgba(79, 211, 168, 0.2); color: var(--accent); border: 1px solid var(--accent); font-size: 0.65rem; font-weight: bold; padding: 2px 6px; border-radius: 10px;">2 meses gratis</span>
+          </span>
+        </div>
+
+        <div class="membership-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+          
+          <!-- Plan Gratis -->
+          <div class="membership-card" style="background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem; display: flex; flex-direction: column; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 10px 20px rgba(0,0,0,0.2)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+            <div style="margin-bottom: 1rem;">
+              <h3 style="font-size: 1.25rem; margin-bottom: 0.25rem; color: var(--text);">Gratis</h3>
+              <p style="font-size: 1.8rem; font-weight: bold; color: var(--text);">$0<span style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal;">/{{ billingCycle === 'annual' ? 'año' : 'mes' }}</span></p>
+            </div>
+            <ul style="list-style: none; padding: 0; margin: 0 0 1rem 0; flex-grow: 1; color: var(--text-muted); font-size: 0.85rem;">
+              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--accent); flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span><b>Dashboard:</b> Resumen básico.</span>
+              </li>
+              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--accent); flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span><b>Movimientos:</b> Máximo 15 movimientos.</span>
+              </li>
+              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--accent); flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span><b>Objetivos:</b> Máximo 1 objetivo.</span>
+              </li>
+              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px; opacity: 0.5;">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--text-muted); flex-shrink: 0; margin-top: 2px;"><path d="M18 6L6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span style="text-decoration: line-through;">Notificaciones</span>
+              </li>
+              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px; opacity: 0.5;">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--text-muted); flex-shrink: 0; margin-top: 2px;"><path d="M18 6L6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span style="text-decoration: line-through;">Estadísticas detalladas</span>
+              </li>
+              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px; opacity: 0.5;">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--text-muted); flex-shrink: 0; margin-top: 2px;"><path d="M18 6L6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span style="text-decoration: line-through;">Gastos Fijos</span>
+              </li>
+              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px; opacity: 0.5;">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--text-muted); flex-shrink: 0; margin-top: 2px;"><path d="M18 6L6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span style="text-decoration: line-through;">Tarjetas de Crédito</span>
+              </li>
+            </ul>
+            <button v-if="userPlan === 'gratis'" class="btn-ghost" style="width: 100%; border: 1px solid var(--border); padding: 0.6rem;" disabled>Plan Actual</button>
+            <button v-else class="btn-ghost" style="width: 100%; border: 1px solid var(--border); padding: 0.6rem; color: var(--text);">Elegir Gratis</button>
+          </div>
+
+          <!-- Plan Pro -->
+          <div class="membership-card" style="background: linear-gradient(145deg, rgba(79, 211, 168, 0.1) 0%, rgba(30, 41, 59, 0.4) 100%); border: 1px solid var(--accent); border-radius: 16px; padding: 1.25rem; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(79, 211, 168, 0.15); position: relative; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-5px) scale(1.02)'; this.style.boxShadow='0 15px 35px rgba(79, 211, 168, 0.3)'" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 10px 30px rgba(79, 211, 168, 0.15)'">
+            <div style="margin-bottom: 1rem;">
+              <h3 style="font-size: 1.25rem; margin-bottom: 0.25rem; color: var(--accent);">Pro</h3>
+              <p style="font-size: 1.8rem; font-weight: bold; color: var(--text); transition: color 0.3s;">
+                {{ billingCycle === 'annual' ? '$149.000' : '$14.900' }}
+                <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal;">/{{ billingCycle === 'annual' ? 'año' : 'mes' }}</span>
+              </p>
+              <p v-if="billingCycle === 'annual'" style="color: var(--accent); font-size: 0.8rem; margin-top: -5px; font-weight: bold;">Ahorras $29.800</p>
+            </div>
+            <ul style="list-style: none; padding: 0; margin: 0 0 1rem 0; flex-grow: 1; color: var(--text-muted); font-size: 0.85rem;">
+              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--accent); flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span><b>Movimientos:</b> Ilimitados.</span>
+              </li>
+              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--accent); flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span><b>Objetivos:</b> Máximo 4 objetivos.</span>
+              </li>
+              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--accent); flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span style="color: var(--text);"><b>Estadísticas detalladas</b></span>
+              </li>
+              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--accent); flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span style="color: var(--text);"><b>Gastos Fijos:</b> Máximo 3.</span>
+              </li>
+              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--accent); flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span style="color: var(--text);"><b>Tarjetas de Crédito:</b> Máximo 1.</span>
+              </li>
+              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--accent); flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span style="color: var(--text);"><b>Notificaciones:</b> Completas.</span>
+              </li>
+            </ul>
+            <button v-if="userPlan === 'pro'" class="btn-ghost" style="width: 100%; border: 1px solid var(--border); padding: 0.6rem;" disabled>Plan Actual</button>
+            <button v-else class="btn-accent" style="width: 100%; padding: 0.6rem; font-weight: bold; box-shadow: 0 4px 14px rgba(79, 211, 168, 0.4); transition: transform 0.2s ease;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">Elegir Pro</button>
+          </div>
+
+          <!-- Plan Ultra -->
+          <div class="membership-card" style="background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(168, 85, 247, 0.25) 100%); border: 2px solid #a855f7; border-radius: 16px; padding: 1.25rem; display: flex; flex-direction: column; transform: scale(1.05); box-shadow: 0 15px 35px rgba(168, 85, 247, 0.25); z-index: 1; position: relative; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='scale(1.08)'; this.style.boxShadow='0 20px 40px rgba(168, 85, 247, 0.35)'" onmouseout="this.style.transform='scale(1.05)'; this.style.boxShadow='0 15px 35px rgba(168, 85, 247, 0.25)'">
+            <div style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: linear-gradient(45deg, #a855f7, #ec4899); color: white; font-size: 0.65rem; font-weight: bold; padding: 2px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; z-index: 3; box-shadow: 0 4px 10px rgba(168, 85, 247, 0.4);">Recomendado</div>
+            <div style="position: absolute; inset: 0; overflow: hidden; border-radius: 14px; pointer-events: none; z-index: 0;">
+              <div style="position: absolute; top: -50px; right: -50px; width: 100px; height: 100px; background: #ec4899; filter: blur(50px); opacity: 0.5; border-radius: 50%;"></div>
+            </div>
+            <div style="margin-bottom: 1rem; position: relative; z-index: 2;">
+              <h3 style="font-size: 1.25rem; margin-bottom: 0.25rem; background: -webkit-linear-gradient(45deg, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 20px rgba(168, 85, 247, 0.2);">Ultra</h3>
+              <p style="font-size: 1.8rem; font-weight: bold; color: var(--text); transition: color 0.3s;">
+                {{ billingCycle === 'annual' ? '$249.000' : '$24.900' }}
+                <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal;">/{{ billingCycle === 'annual' ? 'año' : 'mes' }}</span>
+              </p>
+              <p v-if="billingCycle === 'annual'" style="color: #ec4899; font-size: 0.8rem; margin-top: -5px; font-weight: bold;">Ahorras $49.800</p>
+            </div>
+            <ul style="list-style: none; padding: 0; margin: 0 0 1rem 0; flex-grow: 1; color: var(--text-muted); font-size: 0.85rem;">
+              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color: #a855f7; flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span><b>Movimientos:</b> Ilimitados.</span>
+              </li>
+              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color: #a855f7; flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span><b>Objetivos:</b> Ilimitados.</span>
+              </li>
+              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color: #a855f7; flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span><b>Tarjetas de Crédito:</b> Ilimitadas.</span>
+              </li>
+              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color: #a855f7; flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span><b>Gastos Fijos:</b> Ilimitados.</span>
+              </li>
+              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color: #a855f7; flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span style="color: var(--text);"><b>Todas las características Pro</b></span>
+              </li>
+              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="color: #a855f7; flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span style="color: var(--text);"><b>Acceso a futuras funciones en beta</b></span>
+              </li>
+            </ul>
+            <button v-if="userPlan === 'ultra'" class="btn-ghost" style="width: 100%; border: 1px solid var(--border); padding: 0.6rem;" disabled>Plan Actual</button>
+            <button v-else style="width: 100%; font-weight: bold; background: linear-gradient(45deg, #a855f7, #ec4899); color: white; border: none; padding: 0.6rem; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4); transition: filter 0.3s ease, transform 0.2s ease;" onmouseover="this.style.filter='brightness(1.1)'; this.style.transform='scale(1.02)'" onmouseout="this.style.filter='brightness(1)'; this.style.transform='scale(1)'">Elegir Ultra</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>

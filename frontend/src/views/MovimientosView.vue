@@ -204,7 +204,7 @@ const setPage = (p) => {
 
     <!-- Filters -->
     <div class="filters-bar" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:24px;">
-      <div class="search-wrap" style="position:relative; flex:1; min-width:200px;">
+      <div class="search-wrap" style="position:relative; flex:1; min-width:0;">
         <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted);">
           <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.8" />
           <path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />

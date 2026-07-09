@@ -27,6 +27,19 @@ class GastoFijoController extends Controller
             'icono' => 'nullable|string|max:50',
         ]);
 
+        $user = $request->user();
+        $plan = $user->plan;
+
+        $gastosFijosCount = $user->gastoFijos()->count();
+
+        if ($plan === 'gratis') {
+            return response()->json(['message' => 'El plan Gratis no incluye Gastos Fijos.'], 403);
+        }
+
+        if ($plan === 'pro' && $gastosFijosCount >= 3) {
+            return response()->json(['message' => 'Límite de 3 gastos fijos alcanzado para el plan Pro.'], 403);
+        }
+
         $validated['fecha_ultimo_pago'] = now()->toDateString();
         $gastoFijo = $request->user()->gastoFijos()->create($validated);
         

@@ -62,6 +62,16 @@ class MovimientoController extends Controller
             'metodo_pago' => 'nullable|string|max:50',
         ]);
 
+        $user = $request->user();
+        $plan = $user->plan;
+
+        if ($plan === 'gratis') {
+            $count = $user->movimientos()->count();
+            if ($count >= 15) {
+                return response()->json(['message' => 'Has alcanzado el límite de 15 movimientos para el plan Gratis.'], 403);
+            }
+        }
+
         $movimiento = $request->user()->movimientos()->create($validated);
         return response()->json($movimiento, 201);
     }
