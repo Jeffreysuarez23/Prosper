@@ -14,6 +14,8 @@ const billingCycle = ref('monthly')
 const isSidebarOpen = ref(false)
 
 const userPlan = computed(() => user.value.membresia?.plan || 'gratis')
+const userBillingCycle = computed(() => user.value.membresia?.billing_cycle || 'monthly')
+const membershipEndsAt = computed(() => user.value.membresia?.ends_at ? new Date(user.value.membresia.ends_at).toLocaleDateString() : '')
 
 const handleNavClick = (e, featureLevel) => {
   if (featureLevel === 'pro' && userPlan.value === 'gratis') {
@@ -249,6 +251,170 @@ onMounted(async () => {
   })
 })
 
+// ========================
+// PAYPAL CHECKOUT LOGIC
+// ========================
+const showCheckoutModal = ref(false)
+const checkoutPlan = ref('')
+const checkoutPrice = ref('')
+
+const openCheckout = (planName) => {
+  checkoutPlan.value = planName
+  
+  if (planName === 'pro') {
+    checkoutPrice.value = billingCycle.value === 'annual' ? '$149.000 COP' : '$14.900 COP'
+  } else if (planName === 'ultra') {
+    checkoutPrice.value = billingCycle.value === 'annual' ? '$249.000 COP' : '$24.900 COP'
+  }
+
+  showMembershipModal.value = false
+  showCheckoutModal.value = true
+  
+  // Render paypal buttons after DOM updates
+  setTimeout(() => renderPayPalButtons(), 200)
+}
+
+const renderPayPalButtons = async () => {
+  const container = document.getElementById('paypal-button-container')
+  if (container) container.innerHTML = '' // Clear previous
+
+  try {
+    // 1. Fetch Client ID
+    const res = await api.get('/paypal/client-id')
+    const clientId = res.data.client_id
+    
+    if (clientId === 'test') {
+      console.warn("Usando credenciales de prueba de PayPal")
+    }
+
+    // 2. Load SDK dynamically if not loaded
+    if (!window.paypal) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD`
+        script.onload = resolve
+        script.onerror = () => reject(new Error('Failed to load PayPal SDK. Revisa tu Client ID en el archivo .env'))
+        document.body.appendChild(script)
+      })
+    }
+
+    // 3. Render Buttons
+    window.paypal.Buttons({
+      style: {
+        layout: 'vertical',
+        color: 'blue',
+        shape: 'rect',
+        label: 'pay'
+      },
+      createOrder: async (data, actions) => {
+        try {
+          const res = await api.post('/paypal/create-order', {
+            plan: checkoutPlan.value,
+            billing_cycle: billingCycle.value
+          })
+          if (res.data.id) {
+            return res.data.id
+          } else {
+             throw new Error(res.data.error || 'Unknown error')
+          }
+        } catch (err) {
+          console.error(err)
+          Swal.fire({
+            icon: 'error',
+            title: 'Error de conexión',
+            text: 'No se pudo iniciar el pago. Verifica tus credenciales de PayPal.',
+            background: 'var(--surface)',
+            color: 'var(--text)'
+          })
+          throw err
+        }
+      },
+      onApprove: async (data, actions) => {
+        try {
+          Swal.fire({
+            title: 'Procesando pago...',
+            text: 'Por favor espera un momento.',
+            allowOutsideClick: false,
+            background: 'var(--surface)',
+            color: 'var(--text)',
+            didOpen: () => {
+              Swal.showLoading()
+            }
+          })
+
+          const res = await api.post('/paypal/capture-order', {
+            orderID: data.orderID,
+            plan: checkoutPlan.value,
+            billing_cycle: billingCycle.value
+          })
+
+          if (res.data.success) {
+              Swal.fire({
+                icon: 'success',
+                title: '<span style="font-size: 2rem; font-weight: 800; background: -webkit-linear-gradient(45deg, #4fd3a8, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">¡Pago Exitoso!</span>',
+                html: `
+                  <p style="color: var(--text-muted); font-size: 1.05rem; margin-bottom: 1.5rem;">
+                    Tu membresía se actualizó al instante. ¡Bienvenido al siguiente nivel!
+                  </p>
+                  <div style="padding: 1rem; background: rgba(79, 211, 168, 0.1); border: 1px solid rgba(79, 211, 168, 0.3); border-radius: 12px; display: inline-block;">
+                    <h3 style="color: var(--text); font-weight: bold; font-size: 1.1rem; margin: 0;">
+                      <i class="fas fa-crown" style="color: #a855f7; margin-right: 8px;"></i>Suscripción Activa
+                    </h3>
+                  </div>
+                `,
+                background: 'var(--surface-2)',
+                color: 'var(--text)',
+                confirmButtonText: 'Empezar a disfrutar',
+                buttonsStyling: false,
+                customClass: {
+                  popup: 'swal-custom-popup',
+                  confirmButton: 'btn-accent',
+                },
+                backdrop: `rgba(15, 23, 42, 0.85)`
+              }).then(async () => {
+                showCheckoutModal.value = false
+                const userRes = await api.get('/user')
+                user.value = userRes.data
+                localStorage.setItem('user', JSON.stringify(userRes.data))
+                refreshKey.value++
+              })
+            
+          } else {
+             Swal.fire({
+              icon: 'error',
+              title: 'Pago fallido',
+              text: 'No se pudo completar la transacción.',
+              background: 'var(--surface)',
+              color: 'var(--text)'
+            })
+          }
+        } catch (err) {
+          console.error(err)
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Ocurrió un error al procesar el pago.',
+            background: 'var(--surface)',
+            color: 'var(--text)'
+          })
+        }
+      }
+    }).render('#paypal-button-container')
+  } catch (error) {
+    console.error('Error setup PayPal', error)
+    const container = document.getElementById('paypal-button-container')
+    if (container) {
+      container.innerHTML = `
+        <div style="text-align: center; color: #ef4444; padding: 1rem; border: 1px dashed #ef4444; border-radius: 8px;">
+          <p style="font-weight: bold; margin-bottom: 0.5rem;">⚠️ No se pudo cargar PayPal</p>
+          <p style="font-size: 0.85rem;">Es probable que aún no hayas colocado tus credenciales en el archivo <code>backend/.env</code> o que sean inválidas.</p>
+        </div>
+      `
+    }
+  }
+}
+
+
 </script>
 
 <template>
@@ -266,9 +432,12 @@ onMounted(async () => {
           </span>
           <span class="brand-name">Prosper</span>
         </div>
-        <span style="font-size: 0.65rem; text-transform: uppercase; font-weight: bold; padding: 2px 8px; border-radius: 12px; background: var(--surface-2); color: var(--accent); letter-spacing: 1px;">
+        <button @click="showMembershipModal = true"
+          style="font-size: 0.65rem; text-transform: uppercase; font-weight: bold; padding: 4px 12px; border-radius: 12px; letter-spacing: 1px; cursor: pointer; transition: transform 0.2s, filter 0.2s; margin-top: 2px;"
+          :style="userPlan === 'ultra' ? 'background: linear-gradient(45deg, #a855f7, #ec4899); color: white; border: none; box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);' : (userPlan === 'pro' ? 'background: rgba(79, 211, 168, 0.15); color: var(--accent); border: 1px solid var(--accent); box-shadow: 0 0 10px rgba(79, 211, 168, 0.2);' : 'background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border);')"
+          onmouseover="this.style.transform='scale(1.05)'; this.style.filter='brightness(1.1)'" onmouseout="this.style.transform='scale(1)'; this.style.filter='brightness(1)'">
           Plan {{ userPlan }}
-        </span>
+        </button>
       </div>
       <nav class="nav" aria-label="Navegación principal" @click="isSidebarOpen = false">
         <RouterLink class="nav-item" to="/" exact-active-class="is-active">
@@ -475,40 +644,43 @@ onMounted(async () => {
     </div>
     <!-- ============ MODAL: MEMBRESÍAS ============ -->
     <div class="modal" :class="{ 'is-active': showMembershipModal }">
-      <div class="modal-content" style="max-width: 900px; padding: 1.5rem; position: relative;">
-        <div class="modal-head" style="margin-bottom: 1rem; border-bottom: none;">
-          <div class="head-text" style="text-align: center; width: 100%;">
-            <h2 style="font-size: 1.8rem; margin-bottom: 0.25rem; background: -webkit-linear-gradient(45deg, var(--accent), #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Sube de nivel</h2>
-            <p style="color: var(--text-muted); font-size: 1rem;">Elige la membresía que mejor se adapte a tus necesidades financieras.</p>
-          </div>
-          <button class="modal-close" @click="showMembershipModal = false" aria-label="Cerrar" style="position: absolute; top: 1rem; right: 1rem;">
-            <svg viewBox="0 0 24 24" width="24" height="24">
-              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-            </svg>
-          </button>
-        </div>
+      <div class="modal-content" style="max-width: 900px; padding: 0; position: relative;">
         
-        <div style="display: flex; justify-content: center; margin-bottom: 2rem; align-items: center; gap: 12px;">
-          <span :style="{ color: billingCycle === 'monthly' ? 'var(--text)' : 'var(--text-muted)', fontWeight: billingCycle === 'monthly' ? 'bold' : 'normal', transition: 'color 0.3s' }">Mensual</span>
-          <label style="position: relative; display: inline-block; width: 50px; height: 26px;">
-            <input type="checkbox" :checked="billingCycle === 'annual'" @change="billingCycle = $event.target.checked ? 'annual' : 'monthly'" style="opacity: 0; width: 0; height: 0;">
-            <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--surface-2); border: 1px solid var(--border); transition: .4s; border-radius: 34px;">
-              <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: var(--accent); transition: .4s; border-radius: 50%;" :style="billingCycle === 'annual' ? 'transform: translateX(24px)' : ''"></span>
+        <!-- Header -->
+        <div style="padding: 1.5rem 1.5rem 0.5rem 1.5rem; text-align: center; position: relative;">
+          <button @click="showMembershipModal = false" style="position: absolute; top: 1rem; right: 1rem; background: rgba(255,255,255,0.05); border: none; border-radius: 50%; width: 32px; height: 32px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" /></svg>
+          </button>
+          
+          <div style="display: inline-block; margin-bottom: 0.5rem;">
+            <h2 style="font-size: 1.8rem; margin-bottom: 0.25rem; background: -webkit-linear-gradient(45deg, var(--accent), #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Sube de nivel</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Elige la membresía que mejor se adapte a tus necesidades financieras.</p>
+          </div>
+
+          <!-- Billing Cycle Toggle -->
+          <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1rem;">
+            <span :style="{ color: billingCycle === 'monthly' ? 'var(--text)' : 'var(--text-muted)', fontWeight: billingCycle === 'monthly' ? 'bold' : 'normal', transition: 'color 0.3s' }">Mensual</span>
+            <label style="position: relative; display: inline-block; width: 50px; height: 26px;">
+              <input type="checkbox" :checked="billingCycle === 'annual'" @change="billingCycle = $event.target.checked ? 'annual' : 'monthly'" style="opacity: 0; width: 0; height: 0;">
+              <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--surface-2); border: 1px solid var(--border); transition: .4s; border-radius: 34px;">
+                <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: var(--accent); transition: .4s; border-radius: 50%;" :style="billingCycle === 'annual' ? 'transform: translateX(24px)' : ''"></span>
+              </span>
+            </label>
+            <span :style="{ color: billingCycle === 'annual' ? 'var(--text)' : 'var(--text-muted)', fontWeight: billingCycle === 'annual' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: '6px', transition: 'color 0.3s' }">
+              Anual 
+              <span style="background: rgba(79, 211, 168, 0.2); color: var(--accent); border: 1px solid var(--accent); font-size: 0.65rem; font-weight: bold; padding: 2px 6px; border-radius: 10px;">2 meses gratis</span>
             </span>
-          </label>
-          <span :style="{ color: billingCycle === 'annual' ? 'var(--text)' : 'var(--text-muted)', fontWeight: billingCycle === 'annual' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: '6px', transition: 'color 0.3s' }">
-            Anual 
-            <span style="background: rgba(79, 211, 168, 0.2); color: var(--accent); border: 1px solid var(--accent); font-size: 0.65rem; font-weight: bold; padding: 2px 6px; border-radius: 10px;">2 meses gratis</span>
-          </span>
+          </div>
         </div>
 
-        <div class="membership-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+        <!-- Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; padding: 2.5rem 1.5rem 1.5rem 1.5rem; overflow-y: auto;">
           
           <!-- Plan Gratis -->
-          <div class="membership-card" style="background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem; display: flex; flex-direction: column; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 10px 20px rgba(0,0,0,0.2)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-            <div style="margin-bottom: 1rem;">
-              <h3 style="font-size: 1.25rem; margin-bottom: 0.25rem; color: var(--text);">Gratis</h3>
-              <p style="font-size: 1.8rem; font-weight: bold; color: var(--text);">$0<span style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal;">/{{ billingCycle === 'annual' ? 'año' : 'mes' }}</span></p>
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column;">
+            <h3 style="font-size: 1.2rem; margin-bottom: 1rem;">Gratis</h3>
+            <div style="margin-bottom: 1.5rem;">
+              <p style="font-size: 1.8rem; font-weight: bold;">$0<span style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal;">/{{ billingCycle === 'annual' ? 'año' : 'mes' }}</span></p>
             </div>
             <ul style="list-style: none; padding: 0; margin: 0 0 1rem 0; flex-grow: 1; color: var(--text-muted); font-size: 0.85rem;">
               <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
@@ -540,19 +712,22 @@ onMounted(async () => {
                 <span style="text-decoration: line-through;">Tarjetas de Crédito</span>
               </li>
             </ul>
-            <button v-if="userPlan === 'gratis'" class="btn-ghost" style="width: 100%; border: 1px solid var(--border); padding: 0.6rem;" disabled>Plan Actual</button>
-            <button v-else class="btn-ghost" style="width: 100%; border: 1px solid var(--border); padding: 0.6rem; color: var(--text);">Elegir Gratis</button>
+            <div v-if="userPlan === 'gratis'" style="text-align: center;">
+              <button class="btn-ghost" style="width: 100%; border: 1px solid var(--border); padding: 0.6rem;" disabled>Plan Actual</button>
+            </div>
           </div>
 
           <!-- Plan Pro -->
-          <div class="membership-card" style="background: linear-gradient(145deg, rgba(79, 211, 168, 0.1) 0%, rgba(30, 41, 59, 0.4) 100%); border: 1px solid var(--accent); border-radius: 16px; padding: 1.25rem; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(79, 211, 168, 0.15); position: relative; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-5px) scale(1.02)'; this.style.boxShadow='0 15px 35px rgba(79, 211, 168, 0.3)'" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 10px 30px rgba(79, 211, 168, 0.15)'">
-            <div style="margin-bottom: 1rem;">
-              <h3 style="font-size: 1.25rem; margin-bottom: 0.25rem; color: var(--accent);">Pro</h3>
-              <p style="font-size: 1.8rem; font-weight: bold; color: var(--text); transition: color 0.3s;">
-                {{ billingCycle === 'annual' ? '$149.000' : '$14.900' }}
-                <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal;">/{{ billingCycle === 'annual' ? 'año' : 'mes' }}</span>
-              </p>
-              <p v-if="billingCycle === 'annual'" style="color: var(--accent); font-size: 0.8rem; margin-top: -5px; font-weight: bold;">Ahorras $29.800</p>
+          <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid var(--accent); border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+              <h3 style="font-size: 1.2rem; margin: 0; color: var(--accent);">Pro</h3>
+              <span v-if="userPlan === 'pro'" style="font-size: 0.75rem; color: var(--accent); background: rgba(79,211,168,0.1); border: 1px solid rgba(79,211,168,0.3); border-radius: 12px; padding: 0.2rem 0.6rem; font-weight: bold;">
+                Válido hasta: {{ membershipEndsAt }}
+              </span>
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+              <p style="font-size: 1.8rem; font-weight: bold; color: var(--text); margin-bottom: 0;">{{ billingCycle === 'annual' ? '$149.000' : '$14.900' }}<span style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal;">/{{ billingCycle === 'annual' ? 'año' : 'mes' }}</span></p>
+              <p v-if="billingCycle === 'annual'" style="color: var(--accent); font-size: 0.8rem; margin-top: 2px; font-weight: bold; margin-bottom: 0;">Ahorras $29.800</p>
             </div>
             <ul style="list-style: none; padding: 0; margin: 0 0 1rem 0; flex-grow: 1; color: var(--text-muted); font-size: 0.85rem;">
               <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
@@ -561,15 +736,11 @@ onMounted(async () => {
               </li>
               <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
                 <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--accent); flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <span><b>Objetivos:</b> Máximo 4 objetivos.</span>
-              </li>
-              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
-                <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--accent); flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <span style="color: var(--text);"><b>Estadísticas detalladas</b></span>
               </li>
               <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
                 <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--accent); flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <span style="color: var(--text);"><b>Gastos Fijos:</b> Máximo 3.</span>
+                <span style="color: var(--text);"><b>Gastos Fijos:</b> Ilimitados.</span>
               </li>
               <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
                 <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--accent); flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -580,19 +751,35 @@ onMounted(async () => {
                 <span style="color: var(--text);"><b>Notificaciones:</b> Completas.</span>
               </li>
             </ul>
-            <button v-if="userPlan === 'pro'" class="btn-ghost" style="width: 100%; border: 1px solid var(--border); padding: 0.6rem;" disabled>Plan Actual</button>
-            <button v-else class="btn-accent" style="width: 100%; padding: 0.6rem; font-weight: bold; box-shadow: 0 4px 14px rgba(79, 211, 168, 0.4); transition: transform 0.2s ease;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">Elegir Pro</button>
+            <button v-if="userPlan === 'pro' && userBillingCycle === 'monthly' && billingCycle === 'annual'" @click="openCheckout('pro')" style="width: 100%; font-weight: bold; background: linear-gradient(45deg, #2563eb, #38bdf8); color: white; border: none; padding: 0.6rem; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4); transition: filter 0.3s ease, transform 0.2s ease;" onmouseover="this.style.filter='brightness(1.1)'; this.style.transform='scale(1.02)'" onmouseout="this.style.filter='brightness(1)'; this.style.transform='scale(1)'">
+              Mejorar a Anual
+            </button>
+            <button v-else-if="userPlan === 'pro' && userBillingCycle === 'annual' && billingCycle === 'monthly'" @click="openCheckout('pro')" class="btn-ghost" style="width: 100%; border: 1px solid var(--border); padding: 0.6rem; color: var(--text); font-weight: 500; transition: all 0.2s ease; border-radius: 8px;" onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text)'">
+              Cambiar a Mensual
+            </button>
+            <button v-else-if="userPlan === 'pro'" class="btn-ghost" style="width: 100%; border: 1px solid var(--border); padding: 0.6rem;" disabled>Plan Actual</button>
+            <button v-else-if="userPlan === 'ultra'" @click="openCheckout('pro')" class="btn-ghost" style="width: 100%; border: 1px solid var(--border); padding: 0.6rem; color: var(--text-muted); font-weight: 500; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--text-muted)'; this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'">
+              Bajar a Pro
+            </button>
+            <button v-else @click="openCheckout('pro')" class="btn-accent" style="width: 100%; padding: 0.6rem; font-weight: bold; box-shadow: 0 4px 14px rgba(79, 211, 168, 0.4); transition: transform 0.2s ease;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+              Elegir Pro
+            </button>
           </div>
 
           <!-- Plan Ultra -->
-          <div class="membership-card" style="background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(168, 85, 247, 0.25) 100%); border: 2px solid #a855f7; border-radius: 16px; padding: 1.25rem; display: flex; flex-direction: column; transform: scale(1.05); box-shadow: 0 15px 35px rgba(168, 85, 247, 0.25); z-index: 1; position: relative; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='scale(1.08)'; this.style.boxShadow='0 20px 40px rgba(168, 85, 247, 0.35)'" onmouseout="this.style.transform='scale(1.05)'; this.style.boxShadow='0 15px 35px rgba(168, 85, 247, 0.25)'">
+          <div class="membership-card" style="background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(168, 85, 247, 0.25) 100%); border: 2px solid #a855f7; border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; transform: scale(1.05); box-shadow: 0 15px 35px rgba(168, 85, 247, 0.25); z-index: 1; position: relative; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='scale(1.08)'; this.style.boxShadow='0 20px 40px rgba(168, 85, 247, 0.35)'" onmouseout="this.style.transform='scale(1.05)'; this.style.boxShadow='0 15px 35px rgba(168, 85, 247, 0.25)'">
             <div style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: linear-gradient(45deg, #a855f7, #ec4899); color: white; font-size: 0.65rem; font-weight: bold; padding: 2px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; z-index: 3; box-shadow: 0 4px 10px rgba(168, 85, 247, 0.4);">Recomendado</div>
             <div style="position: absolute; inset: 0; overflow: hidden; border-radius: 14px; pointer-events: none; z-index: 0;">
               <div style="position: absolute; top: -50px; right: -50px; width: 100px; height: 100px; background: #ec4899; filter: blur(50px); opacity: 0.5; border-radius: 50%;"></div>
             </div>
             <div style="margin-bottom: 1rem; position: relative; z-index: 2;">
-              <h3 style="font-size: 1.25rem; margin-bottom: 0.25rem; background: -webkit-linear-gradient(45deg, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 20px rgba(168, 85, 247, 0.2);">Ultra</h3>
-              <p style="font-size: 1.8rem; font-weight: bold; color: var(--text); transition: color 0.3s;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.25rem;">
+                <h3 style="font-size: 1.25rem; margin: 0; background: -webkit-linear-gradient(45deg, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 20px rgba(168, 85, 247, 0.2);">Ultra</h3>
+                <span v-if="userPlan === 'ultra'" style="font-size: 0.75rem; color: #a855f7; background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3); border-radius: 12px; padding: 0.2rem 0.6rem; font-weight: bold;">
+                  Válido hasta: {{ membershipEndsAt }}
+                </span>
+              </div>
+              <p style="font-size: 1.8rem; font-weight: bold; color: var(--text); transition: color 0.3s; margin-top: 0.5rem;">
                 {{ billingCycle === 'annual' ? '$249.000' : '$24.900' }}
                 <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal;">/{{ billingCycle === 'annual' ? 'año' : 'mes' }}</span>
               </p>
@@ -624,11 +811,54 @@ onMounted(async () => {
                 <span style="color: var(--text);"><b>Acceso a futuras funciones en beta</b></span>
               </li>
             </ul>
-            <button v-if="userPlan === 'ultra'" class="btn-ghost" style="width: 100%; border: 1px solid var(--border); padding: 0.6rem;" disabled>Plan Actual</button>
-            <button v-else style="width: 100%; font-weight: bold; background: linear-gradient(45deg, #a855f7, #ec4899); color: white; border: none; padding: 0.6rem; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4); transition: filter 0.3s ease, transform 0.2s ease;" onmouseover="this.style.filter='brightness(1.1)'; this.style.transform='scale(1.02)'" onmouseout="this.style.filter='brightness(1)'; this.style.transform='scale(1)'">Elegir Ultra</button>
+            <div v-if="userPlan === 'ultra'" style="text-align: center;">
+              <button v-if="userBillingCycle === 'monthly' && billingCycle === 'annual'" @click="openCheckout('ultra')" style="width: 100%; font-weight: bold; background: linear-gradient(45deg, #a855f7, #ec4899); color: white; border: none; padding: 0.6rem; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4); transition: filter 0.3s ease, transform 0.2s ease; position: relative; z-index: 2;" onmouseover="this.style.filter='brightness(1.1)'; this.style.transform='scale(1.02)'" onmouseout="this.style.filter='brightness(1)'; this.style.transform='scale(1)'">
+                Mejorar a Anual
+              </button>
+              <button v-else-if="userBillingCycle === 'annual' && billingCycle === 'monthly'" @click="openCheckout('ultra')" class="btn-ghost" style="width: 100%; border: 1px solid var(--border); padding: 0.6rem; color: var(--text); font-weight: 500; transition: all 0.2s ease; position: relative; z-index: 2; border-radius: 8px;" onmouseover="this.style.borderColor='#a855f7'; this.style.color='#a855f7'" onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text)'">
+                Cambiar a Mensual
+              </button>
+              <button v-else class="btn-ghost" style="width: 100%; border: 1px solid var(--border); padding: 0.6rem; position: relative; z-index: 2;" disabled>Plan Actual</button>
+            </div>
+            <button v-else @click="openCheckout('ultra')" style="width: 100%; font-weight: bold; background: linear-gradient(45deg, #a855f7, #ec4899); color: white; border: none; padding: 0.6rem; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4); transition: filter 0.3s ease, transform 0.2s ease; position: relative; z-index: 2;" onmouseover="this.style.filter='brightness(1.1)'; this.style.transform='scale(1.02)'" onmouseout="this.style.filter='brightness(1)'; this.style.transform='scale(1)'">
+              {{ userPlan === 'pro' ? 'Mejorar a Ultra' : 'Elegir Ultra' }}
+            </button>
           </div>
 
         </div>
+      </div>
+    </div>
+
+    <!-- ============ MODAL: CHECKOUT PAYPAL ============ -->
+    <div class="modal" :class="{ 'is-active': showCheckoutModal }">
+      <div class="modal-content" style="max-width: 500px; padding: 2rem; position: relative;">
+        <div class="modal-head" style="margin-bottom: 1.5rem; border-bottom: none; display: flex; flex-direction: column; align-items: center;">
+          <h2 style="font-size: 1.6rem; color: var(--text); margin-bottom: 0.5rem;">Confirmar Pago</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center;">Estás a un paso de mejorar tu experiencia en Prosper.</p>
+          <button class="modal-close" @click="showCheckoutModal = false" aria-label="Cerrar" style="position: absolute; top: 1.5rem; right: 1.5rem;">
+            <svg viewBox="0 0 24 24" width="24" height="24">
+              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+        
+        <div style="background: var(--surface-2); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <span style="color: var(--text-muted); font-weight: bold;">Plan Seleccionado:</span>
+            <span style="color: var(--text); font-weight: bold; text-transform: uppercase;">{{ checkoutPlan }} ({{ billingCycle === 'annual' ? 'Anual' : 'Mensual' }})</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--text-muted); font-weight: bold;">Total a pagar:</span>
+            <span style="color: var(--accent); font-size: 1.4rem; font-weight: bold;">{{ checkoutPrice }}</span>
+          </div>
+        </div>
+
+        <!-- Botones de PayPal se inyectarán aquí -->
+        <div id="paypal-button-container" style="min-height: 150px; display: flex; justify-content: center; align-items: center;">
+          <span style="color: var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Cargando pasarela de pago...</span>
+        </div>
+
+        <button @click="showCheckoutModal = false; showMembershipModal = true" class="btn-ghost" style="width: 100%; margin-top: 1rem; padding: 0.6rem; border: 1px solid var(--border);">Volver a membresías</button>
       </div>
     </div>
 

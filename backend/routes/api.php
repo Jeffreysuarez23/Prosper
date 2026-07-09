@@ -9,6 +9,7 @@ use App\Http\Controllers\ObjetivoController;
 use App\Http\Controllers\GastoFijoController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\TarjetaCreditoController;
+use App\Http\Controllers\PayPalController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
@@ -35,5 +36,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/notificaciones/{id}/read', [NotificacionController::class, 'markAsRead']);
     Route::delete('/notificaciones/{id}', [NotificacionController::class, 'destroy']);
     Route::delete('/notificaciones', [NotificacionController::class, 'destroyAll']);
+    
+    // PayPal Routes
+    Route::get('/paypal/client-id', [PayPalController::class, 'getClientId']);
+    Route::post('/paypal/create-order', [PayPalController::class, 'createOrder']);
+    Route::post('/paypal/capture-order', [PayPalController::class, 'captureOrder']);
 });
 
