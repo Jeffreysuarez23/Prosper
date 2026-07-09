@@ -139,11 +139,38 @@ const formatDeudaInput = (e) => {
   let num = parseInt(raw)
   const limite = parseInt(cardData.value.limite_credito) || 0
   if (limite > 0 && num > limite) {
-    Swal.fire({ toast: true, position: 'bottom-end', icon: 'warning', title: 'La deuda supera el límite', showConfirmButton: false, timer: 2500, background: 'var(--surface)', color: 'var(--text)', customClass: { popup: 'swal-custom-popup', title: 'swal-custom-title' } })
+    num = limite
+    Swal.fire({ toast: true, position: 'bottom-end', icon: 'warning', title: 'La deuda supera el límite', text: 'Se ha ajustado automáticamente al límite de crédito.', showConfirmButton: false, timer: 2500, background: 'var(--surface)', color: 'var(--text)', customClass: { popup: 'swal-custom-popup', title: 'swal-custom-title' } })
   }
   displayDeuda.value = new Intl.NumberFormat('es-CO').format(num)
   cardData.value.deuda_actual = num
   e.target.value = displayDeuda.value
+}
+
+const formatDiaCorte = (e) => {
+  let val = parseInt(e.target.value)
+  if (isNaN(val)) {
+    cardData.value.dia_corte = ''
+    e.target.value = ''
+    return
+  }
+  if (val > 31) val = 31
+  if (val < 1) val = 1
+  cardData.value.dia_corte = val
+  e.target.value = val
+}
+
+const formatDiaPago = (e) => {
+  let val = parseInt(e.target.value)
+  if (isNaN(val)) {
+    cardData.value.dia_pago = ''
+    e.target.value = ''
+    return
+  }
+  if (val > 31) val = 31
+  if (val < 1) val = 1
+  cardData.value.dia_pago = val
+  e.target.value = val
 }
 
 const formatTasaInput = (e) => {
@@ -210,16 +237,20 @@ const saveCard = async () => {
     if (refreshHeaderBalance) refreshHeaderBalance()
   } catch (error) { 
     console.error(error)
-    Swal.fire({
-      toast: true,
-      position: 'top-end',
-      icon: 'error',
-      title: error.response?.data?.message || 'Error al guardar la tarjeta',
-      showConfirmButton: false,
-      timer: 3000,
-      background: 'var(--surface)',
-      color: 'var(--text)'
-    })
+    if (error.response && error.response.status === 403 && error.response.data.message) {
+      // The global api.js interceptor will handle this and show the alert
+    } else {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'error',
+        title: error.response?.data?.message || 'Error al guardar la tarjeta',
+        showConfirmButton: false,
+        timer: 3000,
+        background: 'var(--surface)',
+        color: 'var(--text)'
+      })
+    }
   }
 }
 
@@ -367,7 +398,7 @@ const saveDebt = async () => {
 
     <!-- Search & Filters -->
     <div class="goals-header" style="flex-wrap: wrap; gap: 16px;">
-      <form @submit.prevent="fetchData" style="display:flex; gap:12px; align-items:center; flex:1; min-width: 300px;">
+      <form @submit.prevent="fetchData" style="display:flex; gap:12px; align-items:center; flex:1; min-width: 0;">
         <div class="search-wrap" style="position:relative; flex:1;">
           <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16"
             style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted);">
@@ -536,11 +567,11 @@ const saveDebt = async () => {
           </div>
           <div class="form-group form-third">
             <label>Día de corte</label>
-            <input type="number" v-model.number="cardData.dia_corte" min="1" max="31" required>
+            <input type="number" :value="cardData.dia_corte" @input="formatDiaCorte" min="1" max="31" required>
           </div>
           <div class="form-group form-third">
             <label>Día de pago</label>
-            <input type="number" v-model.number="cardData.dia_pago" min="1" max="31" required>
+            <input type="number" :value="cardData.dia_pago" @input="formatDiaPago" min="1" max="31" required>
           </div>
         </div>
         <div class="form-group">
@@ -872,5 +903,64 @@ const saveDebt = async () => {
 .goal-btn.danger:hover {
   background: var(--red);
   color: white;
+}
+
+/* ── Responsive Credit Cards ── */
+@media (max-width: 920px) {
+  .cc-visual {
+    padding: 18px;
+    min-height: 150px;
+  }
+  .cc-digits {
+    font-size: 1rem;
+    gap: 10px;
+    margin: 14px 0 12px;
+  }
+  .cc-info {
+    padding: 16px 18px 18px;
+  }
+  .cc-info-value {
+    font-size: .95rem;
+  }
+  .cc-info-value-sm {
+    font-size: .85rem;
+  }
+  .goal-actions {
+    flex-wrap: wrap;
+  }
+  .goal-btn {
+    min-width: calc(50% - 4px);
+  }
+}
+
+@media (max-width: 560px) {
+  .cc-visual {
+    padding: 16px;
+    min-height: 130px;
+  }
+  .cc-digits {
+    font-size: .85rem;
+    gap: 8px;
+    letter-spacing: 2px;
+  }
+  .cc-name {
+    font-size: .78rem;
+  }
+  .cc-label-small {
+    font-size: .6rem;
+  }
+  .cc-info {
+    padding: 14px 16px 16px;
+  }
+  .cc-info-label {
+    font-size: .65rem;
+  }
+  .cc-info-value {
+    font-size: .88rem;
+  }
+  .cc-status-pill {
+    font-size: .6rem;
+    padding: 3px 8px;
+  }
 }
 </style>

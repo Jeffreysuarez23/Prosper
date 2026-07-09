@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\TarjetaCredito;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TarjetaCreditoController extends Controller
 {
@@ -38,7 +39,19 @@ class TarjetaCreditoController extends Controller
 
         $validated['deuda_actual'] = $validated['deuda_actual'] ?? 0;
 
-        $tarjeta = $request->user()->tarjetaCreditos()->create($validated);
+        $user = $request->user();
+        $plan = $user->plan;
+        $tarjetasCount = $user->tarjetaCreditos()->count();
+
+        if ($plan === 'gratis') {
+            return response()->json(['message' => 'El plan Gratis no incluye Tarjetas de Crédito.'], 403);
+        }
+
+        if ($plan === 'pro' && $tarjetasCount >= 1) {
+            return response()->json(['message' => 'Límite de 1 tarjeta de crédito alcanzado para el plan Pro.'], 403);
+        }
+
+        $tarjeta = $user->tarjetaCreditos()->create($validated);
 
         // Ejecutar evaluación de notificaciones inmediatamente
         \Illuminate\Support\Facades\Artisan::call('tarjetas:aplicar-intereses');
@@ -144,19 +157,21 @@ class TarjetaCreditoController extends Controller
             $monto = $tarjetaCredito->deuda_actual;
         }
 
-        $tarjetaCredito->update([
-            'deuda_actual' => $tarjetaCredito->deuda_actual - $monto
-        ]);
+        DB::transaction(function () use ($tarjetaCredito, $monto, $request) {
+            $tarjetaCredito->update([
+                'deuda_actual' => $tarjetaCredito->deuda_actual - $monto
+            ]);
 
-        // Registrar movimiento de gasto (sale dinero del balance)
-        $request->user()->movimientos()->create([
-            'tipo' => 'gasto',
-            'monto' => $monto,
-            'fecha' => now()->toDateString(),
-            'categoria' => 'Servicios',
-            'descripcion' => "Pago a tarjeta: " . $tarjetaCredito->nombre,
-            'metodo_pago' => 'transferencia',
-        ]);
+            // Registrar movimiento de gasto (sale dinero del balance)
+            $request->user()->movimientos()->create([
+                'tipo' => 'gasto',
+                'monto' => $monto,
+                'fecha' => now()->toDateString(),
+                'categoria' => 'Servicios',
+                'descripcion' => "Pago a tarjeta: " . $tarjetaCredito->nombre,
+                'metodo_pago' => 'transferencia',
+            ]);
+        });
 
         // Ejecutar evaluación de notificaciones inmediatamente
         \Illuminate\Support\Facades\Artisan::call('tarjetas:aplicar-intereses');

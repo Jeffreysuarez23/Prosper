@@ -233,6 +233,21 @@ const saveExpense = async () => {
     if (refreshHeaderBalance) refreshHeaderBalance()
   } catch (error) {
     console.error(error)
+    if (error.response && error.response.status === 403 && error.response.data.message) {
+      // The global api.js interceptor will handle this and show the alert
+
+    } else {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'error',
+        title: 'Error al guardar el gasto',
+        showConfirmButton: false,
+        timer: 3000,
+        background: 'var(--surface)',
+        color: 'var(--text)'
+      })
+    }
   }
 }
 
@@ -359,7 +374,7 @@ const deleteExpense = async (id) => {
     </div>
 
     <div class="goals-header" style="flex-wrap: wrap; gap: 16px;">
-      <form @submit.prevent="fetchData" style="display:flex; gap:12px; align-items:center; flex:1; min-width: 300px;">
+      <form @submit.prevent="fetchData" style="display:flex; gap:12px; align-items:center; flex:1; min-width: 0;">
         <div class="search-wrap" style="position:relative; flex:1;">
           <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted);">
             <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.8" />
@@ -539,6 +554,20 @@ const deleteExpense = async (id) => {
 .goal-btn.danger { color:var(--red); border-color:var(--red); }
 .goal-btn.danger:hover { background:var(--red); color:white; }
 
+/* ── Responsive Expense Cards ── */
+@media (max-width: 920px) {
+  .expense-card { padding: 18px; }
+  .expense-emoji { width: 42px; height: 42px; font-size: 1.3rem; border-radius: 12px; }
+  .expense-status-badge { font-size: .7rem; top: 12px; right: 14px; padding: 3px 8px; }
+  .goal-actions { flex-wrap: wrap; }
+  .goal-btn { min-width: calc(50% - 4px); }
+}
 
+@media (max-width: 560px) {
+  .expense-card { padding: 14px; }
+  .expense-emoji { width: 36px; height: 36px; font-size: 1.1rem; border-radius: 10px; }
+  .expense-status-badge { font-size: .65rem; top: 10px; right: 12px; }
+  .goal-btn { font-size: .75rem; padding: 6px 0; }
+}
 
 </style>

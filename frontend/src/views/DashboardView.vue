@@ -1,6 +1,13 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import api from '../services/api'
+
+const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
+const userPlan = computed(() => user.value.membresia?.plan || 'gratis')
+
+const openMembershipModal = () => {
+  window.dispatchEvent(new CustomEvent('open-membership-modal'))
+}
 
 const dashboardData = ref(null)
 const loading = ref(true)
@@ -42,8 +49,6 @@ const getCategoryIcon = (cat) => {
   }
   return icons[cat] || '📎'
 }
-
-import { computed } from 'vue'
 
 const yearData = computed(() => {
   return allMovimientos.value.filter(tx => tx.fecha.startsWith(currentYear))
@@ -134,11 +139,26 @@ const chartOptions = {
 
     <div class="grid grid-2">
       <article class="card card-chart">
-        <div class="card-head">
-          <h2>Ingresos vs Gastos {{ currentYear }}</h2>
+        <div class="card-head" style="display: flex; justify-content: space-between; align-items: center;">
+          <h2 style="margin: 0;">Ingresos vs Gastos {{ currentYear }}</h2>
+          <span v-if="userPlan === 'gratis'" style="font-size: 0.7rem; font-weight: bold; padding: 2px 8px; border-radius: 12px; background: rgba(255,255,255,0.1); color: var(--text-muted); letter-spacing: 0.5px;">PRO</span>
         </div>
-        <div class="chart-wrap" id="chartDashTrend" style="height: 250px;">
-          <apexchart type="bar" height="100%" :options="chartOptions" :series="chartSeries"></apexchart>
+        <div class="chart-wrap" id="chartDashTrend" style="height: 250px; position: relative;">
+          <template v-if="userPlan !== 'gratis'">
+            <apexchart type="bar" height="100%" :options="chartOptions" :series="chartSeries"></apexchart>
+          </template>
+          <template v-else>
+            <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; border-radius: 8px;">
+              <svg viewBox="0 0 24 24" style="width: 32px !important; height: 32px !important; color: var(--text-muted); margin-bottom: 12px; opacity: 0.7;">
+                <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <h3 style="font-size: 1rem; margin-bottom: 8px; color: var(--text);">Estadísticas Bloqueadas</h3>
+              <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; max-width: 80%; margin-bottom: 16px;">Sube a un plan Pro o Ultra para desbloquear el análisis visual de tus finanzas.</p>
+              <button @click="openMembershipModal" class="btn-accent" style="padding: 6px 16px; font-size: 0.85rem;">Ver Membresías</button>
+            </div>
+            <!-- Obfuscated background chart with dummy data -->
+            <apexchart style="opacity: 0.05; filter: blur(3px); pointer-events: none;" type="bar" height="100%" :options="chartOptions" :series="[{name:'Ingresos', data:[10, 20, 15, 30, 25, 40, 35, 50, 45, 60, 55, 70]}, {name:'Gastos', data:[5, 10, 8, 15, 12, 20, 18, 25, 22, 30, 28, 35]}]"></apexchart>
+          </template>
         </div>
       </article>
       <div class="card card-recent">

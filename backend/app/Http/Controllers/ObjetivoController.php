@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Objetivo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ObjetivoController extends Controller
 {
@@ -36,18 +37,34 @@ class ObjetivoController extends Controller
             'icono' => 'nullable|string|max:10',
         ]);
 
-        $objetivo = $request->user()->objetivos()->create($validated);
+        $user = $request->user();
+        $plan = $user->plan;
+        $count = $user->objetivos()->count();
 
-        if ($objetivo->monto_actual > 0) {
-            $request->user()->movimientos()->create([
-                'tipo' => 'gasto',
-                'monto' => $objetivo->monto_actual,
-                'fecha' => now()->toDateString(),
-                'categoria' => 'Ahorro',
-                'descripcion' => "Abono inicial a meta: " . $objetivo->nombre,
-                'metodo_pago' => 'efectivo',
-            ]);
+        if ($plan === 'gratis' && $count >= 1) {
+            return response()->json(['message' => 'Límite alcanzado: El plan Gratis permite máximo 1 objetivo.'], 403);
         }
+
+        if ($plan === 'pro' && $count >= 4) {
+            return response()->json(['message' => 'Límite alcanzado: El plan Pro permite máximo 4 objetivos.'], 403);
+        }
+
+        $objetivo = DB::transaction(function () use ($validated, $user) {
+            $objetivo = $user->objetivos()->create($validated);
+
+            if ($objetivo->monto_actual > 0) {
+                $user->movimientos()->create([
+                    'tipo' => 'gasto',
+                    'monto' => $objetivo->monto_actual,
+                    'fecha' => now()->toDateString(),
+                    'categoria' => 'Ahorro',
+                    'descripcion' => "Abono inicial a meta: " . $objetivo->nombre,
+                    'metodo_pago' => 'efectivo',
+                ]);
+            }
+            
+            return $objetivo;
+        });
 
         return response()->json($objetivo, 201);
     }
@@ -68,31 +85,33 @@ class ObjetivoController extends Controller
         ]);
 
         $old_monto_actual = $objetivo->monto_actual;
-        $objetivo->update($validated);
-        
-        if (isset($validated['monto_actual'])) {
-            $diff = $validated['monto_actual'] - $old_monto_actual;
-            if ($diff != 0) {
-                $tipo_mov = $diff > 0 ? 'gasto' : 'ingreso';
-                $desc = ($diff > 0 ? "Abono a objetivo: " : "Retiro de objetivo: ") . $objetivo->nombre;
-                
-                $request->user()->movimientos()->create([
-                    'tipo' => $tipo_mov,
-                    'monto' => abs($diff),
-                    'fecha' => now()->toDateString(),
-                    'categoria' => 'Ahorro',
-                    'descripcion' => $desc,
-                    'metodo_pago' => 'efectivo',
-                ]);
+        DB::transaction(function () use ($request, $objetivo, $validated, $old_monto_actual) {
+            $objetivo->update($validated);
+            
+            if (isset($validated['monto_actual'])) {
+                $diff = $validated['monto_actual'] - $old_monto_actual;
+                if ($diff != 0) {
+                    $tipo_mov = $diff > 0 ? 'gasto' : 'ingreso';
+                    $desc = ($diff > 0 ? "Abono a objetivo: " : "Retiro de objetivo: ") . $objetivo->nombre;
+                    
+                    $request->user()->movimientos()->create([
+                        'tipo' => $tipo_mov,
+                        'monto' => abs($diff),
+                        'fecha' => now()->toDateString(),
+                        'categoria' => 'Ahorro',
+                        'descripcion' => $desc,
+                        'metodo_pago' => 'efectivo',
+                    ]);
+                }
             }
-        }
 
-        if ($objetivo->monto_actual >= $objetivo->monto_objetivo) {
-            $request->user()->notificaciones()
-                ->where('categoria', 'objetivo_vencer')
-                ->where('accion_url', 'LIKE', '%id=' . $objetivo->id . '%')
-                ->delete();
-        }
+            if ($objetivo->monto_actual >= $objetivo->monto_objetivo) {
+                $request->user()->notificaciones()
+                    ->where('categoria', 'objetivo_vencer')
+                    ->where('accion_url', 'LIKE', '%id=' . $objetivo->id . '%')
+                    ->delete();
+            }
+        });
 
         return response()->json($objetivo);
     }
@@ -102,22 +121,24 @@ class ObjetivoController extends Controller
         $monto_actual = $objetivo->monto_actual;
         $nombre = $objetivo->nombre;
         
-        auth()->user()->notificaciones()
-            ->where('accion_url', 'LIKE', '%id=' . $objetivo->id . '%')
-            ->delete();
+        DB::transaction(function () use ($objetivo, $monto_actual, $nombre) {
+            auth()->user()->notificaciones()
+                ->where('accion_url', 'LIKE', '%id=' . $objetivo->id . '%')
+                ->delete();
 
-        $objetivo->delete();
-        
-        if ($monto_actual > 0) {
-            auth()->user()->movimientos()->create([
-                'tipo' => 'ingreso',
-                'monto' => $monto_actual,
-                'fecha' => now()->toDateString(),
-                'categoria' => 'Ahorro',
-                'descripcion' => "Devolución por meta eliminada: " . $nombre,
-                'metodo_pago' => 'efectivo',
-            ]);
-        }
+            $objetivo->delete();
+            
+            if ($monto_actual > 0) {
+                auth()->user()->movimientos()->create([
+                    'tipo' => 'ingreso',
+                    'monto' => $monto_actual,
+                    'fecha' => now()->toDateString(),
+                    'categoria' => 'Ahorro',
+                    'descripcion' => "Devolución por meta eliminada: " . $nombre,
+                    'metodo_pago' => 'efectivo',
+                ]);
+            }
+        });
         
         return response()->json(null, 204);
     }

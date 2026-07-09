@@ -17,5 +17,7 @@ class DatabaseSeeder extends Seeder
     {
         \App\Models\Role::firstOrCreate(['id' => 1], ['nombre_rol' => 'admin']);
         \App\Models\Role::firstOrCreate(['id' => 2], ['nombre_rol' => 'usuario']);
+        \App\Models\Role::firstOrCreate(['id' => 3], ['nombre_rol' => 'pro']);
+        \App\Models\Role::firstOrCreate(['id' => 4], ['nombre_rol' => 'ultra']);
     }
 }
