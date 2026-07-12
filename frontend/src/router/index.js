@@ -64,6 +64,22 @@ router.beforeEach((to, from, next) => {
     }
   }
   
+  if (to.meta.requiresAdmin) {
+    const userStr = localStorage.getItem('user');
+    let roleId = null;
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        roleId = user.role_id;
+      } catch(e) {}
+    }
+    
+    if (roleId !== 1) {
+      next({ name: 'dashboard' }); // Redirect to dashboard if not admin
+      return;
+    }
+  }
+  
   next();
 })
 
