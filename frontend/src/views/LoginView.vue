@@ -1,11 +1,41 @@
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import api from '../services/api'
 import Swal from 'sweetalert2'
 
 const router = useRouter()
+const route = useRoute()
 const isLogin = ref(true)
+const showAdminOptions = ref(false)
+
+onMounted(() => {
+  if (route.query.security_breach) {
+    // Hyper security alert
+    Swal.fire({
+      icon: 'error',
+      title: 'Acceso Denegado',
+      text: 'Intento de acceso a un área restringida. Por seguridad, tu sesión ha sido revocada.',
+      background: 'var(--surface)',
+      color: 'var(--text)',
+      confirmButtonColor: '#ef4444',
+      customClass: { popup: 'swal-custom-popup', title: 'swal-custom-title', htmlContainer: 'swal-custom-content', confirmButton: 'swal-custom-confirm' }
+    })
+    
+    // Ensure everything is cleared
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    
+    // Clean URL
+    router.replace('/login')
+  }
+})
+
+const goToPanel = () => {
+  const token = localStorage.getItem('token');
+  // En desarrollo el panel correrá típicamente en 5174 si el frontend usa 5173
+  window.location.href = `http://localhost:5174/?token=${token}`;
+}
 
 const loginData = ref({
   email: '',
@@ -40,7 +70,12 @@ const handleLogin = async () => {
     const res = await api.post('/login', loginData.value)
     localStorage.setItem('token', res.data.token)
     localStorage.setItem('user', JSON.stringify(res.data.user))
-    router.push('/')
+    
+    if (res.data.user.role_id === 1) {
+      showAdminOptions.value = true
+    } else {
+      router.push('/')
+    }
   } catch (err) {
     errorLogin.value = err.response?.data?.message || 'Error al iniciar sesión'
   } finally {
@@ -169,7 +204,7 @@ const toggleAuth = () => {
     <div :class="['auth-container', { 'show-register': !isLogin }]" id="authContainer">
       
       <!-- LOGIN BOX -->
-      <div class="auth-box" id="loginBox">
+      <div v-show="!showAdminOptions" class="auth-box" id="loginBox">
         <div class="logo">
           <div class="logo-icon">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -210,7 +245,7 @@ const toggleAuth = () => {
       </div>
 
       <!-- REGISTER BOX -->
-      <div class="auth-box" id="registerBox">
+      <div v-show="!showAdminOptions" class="auth-box" id="registerBox">
         <div class="logo">
           <div class="logo-icon">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -277,6 +312,30 @@ const toggleAuth = () => {
 
         <div class="toggle-text">
           ¿Ya tienes cuenta? <a @click="toggleAuth">Inicia Sesión</a>
+        </div>
+      </div>
+
+      <!-- ADMIN OPTIONS BOX -->
+      <div v-if="showAdminOptions" class="auth-box" id="adminOptionsBox">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+          </div>
+          Prosper
+        </div>
+        
+        <h1 class="title">Hola Administrador</h1>
+        <p class="subtitle">¿A dónde te gustaría ir hoy?</p>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 24px;">
+          <button @click="goToPanel" class="btn-primary" style="background: linear-gradient(45deg, #a855f7, #ec4899); border: none; margin-top: 0;">
+            Ingresar al panel
+          </button>
+          <button @click="router.push('/')" class="btn-primary" style="background: transparent; border: 1px solid var(--border); color: var(--text); margin-top: 0;">
+            Ingresar a prosper
+          </button>
         </div>
       </div>
     </div>

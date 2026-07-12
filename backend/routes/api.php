@@ -41,5 +41,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/paypal/client-id', [PayPalController::class, 'getClientId']);
     Route::post('/paypal/create-order', [PayPalController::class, 'createOrder']);
     Route::post('/paypal/capture-order', [PayPalController::class, 'captureOrder']);
+
+    // Admin Routes
+    Route::middleware([\App\Http\Middleware\IsAdmin::class])->group(function () {
+        Route::get('/admin/stats', [\App\Http\Controllers\AdminController::class, 'getStats']);
+        Route::get('/admin/users', [\App\Http\Controllers\AdminController::class, 'getUsers']);
+        Route::post('/admin/users', [\App\Http\Controllers\AdminController::class, 'createUser']);
+        Route::put('/admin/users/{id}', [\App\Http\Controllers\AdminController::class, 'updateUser']);
+        Route::delete('/admin/users/{id}', [\App\Http\Controllers\AdminController::class, 'deleteUser']);
+        Route::get('/admin/users/{id}/audit', [\App\Http\Controllers\AdminController::class, 'auditUser']);
+    });
 });
+
+
 
