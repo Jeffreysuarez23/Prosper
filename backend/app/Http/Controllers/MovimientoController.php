@@ -12,7 +12,7 @@ class MovimientoController extends Controller
         $query = $request->user()->movimientos()->orderBy('fecha', 'desc')->orderBy('id', 'desc');
 
         if ($request->has('month') && $request->month !== 'all') {
-            $query->whereRaw("DATE_FORMAT(fecha, '%Y-%m') = ?", [$request->month]);
+            $query->whereRaw("TO_CHAR(fecha, 'YYYY-MM') = ?", [$request->month]);
         }
         
         if ($request->filled('q')) {

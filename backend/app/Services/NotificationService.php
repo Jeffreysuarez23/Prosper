@@ -25,7 +25,7 @@ class NotificationService
             ->where(function($query) {
                 $query->whereRaw('monto_pagado_mes < monto')
                       ->orWhereNull('fecha_ultimo_pago')
-                      ->orWhereRaw('DATE_FORMAT(fecha_ultimo_pago, "%Y-%m") != DATE_FORMAT(CURRENT_DATE, "%Y-%m")');
+                      ->orWhereRaw("TO_CHAR(fecha_ultimo_pago, 'YYYY-MM') != TO_CHAR(CURRENT_DATE, 'YYYY-MM')");
             })->get();
 
         foreach ($gastos as $gasto) {
