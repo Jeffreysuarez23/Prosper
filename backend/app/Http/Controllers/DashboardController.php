@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Movimiento;
 use App\Models\Notificacion;
 use App\Services\NotificationService;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardController extends Controller
 {
@@ -13,17 +14,21 @@ class DashboardController extends Controller
     {
         $user = $request->user();
         
-        // Auto-generate notifications
-        $notificationService->generateForUser($user);
+        // Auto-generate notifications (only once a day per user)
+        $cacheKey = 'notifs_generated_' . $user->id;
+        if (!Cache::has($cacheKey)) {
+            $notificationService->generateForUser($user);
+            Cache::put($cacheKey, true, now()->endOfDay());
+        }
         
-        $ingresosTotales = Movimiento::where('user_id', $user->id)
-                            ->where('tipo', 'ingreso')
-                            ->sum('monto');
-                            
-        $gastosTotales = Movimiento::where('user_id', $user->id)
-                            ->where('tipo', 'gasto')
-                            ->sum('monto');
-                            
+        $totals = Movimiento::where('user_id', $user->id)
+            ->selectRaw("
+                SUM(CASE WHEN tipo = 'ingreso' THEN monto ELSE 0 END) as ingresos,
+                SUM(CASE WHEN tipo = 'gasto' THEN monto ELSE 0 END) as gastos
+            ")->first();
+            
+        $ingresosTotales = (float) ($totals->ingresos ?? 0);
+        $gastosTotales = (float) ($totals->gastos ?? 0);
         $balanceGlobal = $ingresosTotales - $gastosTotales;
         
         $unreadNotifs = Notificacion::where('user_id', $user->id)
