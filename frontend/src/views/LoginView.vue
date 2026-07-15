@@ -34,7 +34,7 @@ onMounted(() => {
 const goToPanel = () => {
   const token = localStorage.getItem('token');
   // En desarrollo el panel correrá típicamente en 5174 si el frontend usa 5173
-  window.location.href = `http://localhost:5174/?token=${token}`;
+  window.location.href = `https://prosper-dashboard.vercel.app/?token=${token}`;
 }
 
 const loginData = ref({

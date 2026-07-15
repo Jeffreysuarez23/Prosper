@@ -57,7 +57,7 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAdmin) {
     if (!token) {
       // If no token, kick back to main app
-      window.location.href = 'http://localhost:5173/login'
+      window.location.href = 'https://prosper-frontend-pi.vercel.app/login'
       return
     }
 
@@ -72,13 +72,13 @@ router.beforeEach(async (to, from, next) => {
         // HIPER SEGURIDAD: Si no es admin, destruir token local y redirigir con alerta
         localStorage.removeItem('token')
         localStorage.removeItem('user')
-        window.location.href = 'http://localhost:5173/login?security_breach=true'
+        window.location.href = 'https://prosper-frontend-pi.vercel.app/login?security_breach=true'
       }
     } catch (err) {
       // Token invalid or expired
       localStorage.removeItem('token')
       localStorage.removeItem('user')
-      window.location.href = 'http://localhost:5173/login'
+      window.location.href = 'https://prosper-frontend-pi.vercel.app/login'
     }
   } else {
     next()
