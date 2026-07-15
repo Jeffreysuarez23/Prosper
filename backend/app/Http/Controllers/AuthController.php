@@ -18,14 +18,14 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'telefono' => $request->telefono,
-            'password' => Hash::make($request->password),
-            'role_id' => 2, // Default user role
-            'tema_preferido' => 'light'
-        ]);
+        $user = new User();
+        $user->name = $request->name;
+        $user->email = $request->email;
+        $user->telefono = $request->telefono;
+        $user->password = Hash::make($request->password);
+        $user->role_id = 2; // Default user role
+        $user->tema_preferido = 'light';
+        $user->save();
 
         Membresia::create([
             'user_id' => $user->id,

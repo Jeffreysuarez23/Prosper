@@ -75,13 +75,13 @@ class AdminController extends Controller
             'telefono' => 'nullable|string|max:255',
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role_id' => $request->role_id,
-            'telefono' => $request->telefono,
-        ]);
+        $user = new User();
+        $user->name = $request->name;
+        $user->email = $request->email;
+        $user->password = Hash::make($request->password);
+        $user->role_id = $request->role_id;
+        $user->telefono = $request->telefono;
+        $user->save();
 
         return response()->json(['message' => 'User created successfully', 'user' => $user], 201);
     }

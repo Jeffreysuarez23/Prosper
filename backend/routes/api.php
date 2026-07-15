@@ -11,8 +11,10 @@ use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\TarjetaCreditoController;
 use App\Http\Controllers\PayPalController;
 
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/register', [AuthController::class, 'register']);
+Route::middleware('throttle:5,1')->group(function () {
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/register', [AuthController::class, 'register']);
+});
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
