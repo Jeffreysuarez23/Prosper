@@ -60,6 +60,7 @@ const getPageInfo = () => {
 }
 
 const showTxModal = ref(false)
+const isSubmitting = ref(false)
 const txData = ref({
   tipo: 'ingreso',
   monto: '',
@@ -140,6 +141,7 @@ const onMontoInput = (e) => {
 }
 
 const handleSaveTx = async () => {
+  isSubmitting.value = true
   try {
     const payload = { ...txData.value }
     
@@ -213,6 +215,8 @@ const handleSaveTx = async () => {
         customClass: { popup: 'swal-custom-popup' }
       })
     }
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -641,7 +645,7 @@ const renderPayPalButtons = async () => {
           </div>
           <div class="form-actions" style="margin-top: 24px;">
             <button type="button" class="btn-ghost" @click="showTxModal = false">Cancelar</button>
-            <button type="submit" class="btn-accent">Guardar Movimiento</button>
+            <button type="submit" class="btn-accent" :disabled="isSubmitting">Guardar Movimiento</button>
           </div>
         </form>
       </div>

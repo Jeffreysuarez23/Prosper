@@ -157,9 +157,11 @@ class TarjetaCreditoController extends Controller
             $monto = $tarjetaCredito->deuda_actual;
         }
 
-        DB::transaction(function () use ($tarjetaCredito, $monto, $request) {
-            $tarjetaCredito->update([
-                'deuda_actual' => $tarjetaCredito->deuda_actual - $monto
+        $tarjetaCredito = \Illuminate\Support\Facades\DB::transaction(function () use ($tarjetaCredito, $monto, $request) {
+            $lockedTarjeta = TarjetaCredito::where('id', $tarjetaCredito->id)->lockForUpdate()->first();
+
+            $lockedTarjeta->update([
+                'deuda_actual' => $lockedTarjeta->deuda_actual - $monto
             ]);
 
             // Registrar movimiento de gasto (sale dinero del balance)
@@ -168,9 +170,11 @@ class TarjetaCreditoController extends Controller
                 'monto' => $monto,
                 'fecha' => now()->toDateString(),
                 'categoria' => 'Servicios',
-                'descripcion' => "Pago a tarjeta: " . $tarjetaCredito->nombre,
+                'descripcion' => "Pago a tarjeta: " . $lockedTarjeta->nombre,
                 'metodo_pago' => 'transferencia',
             ]);
+            
+            return $lockedTarjeta;
         });
 
         // Ejecutar evaluación de notificaciones inmediatamente
@@ -188,18 +192,26 @@ class TarjetaCreditoController extends Controller
         ]);
 
         $monto = $validated['monto'];
-        $nuevaDeuda = $tarjetaCredito->deuda_actual + $monto;
+        $tarjetaCredito = \Illuminate\Support\Facades\DB::transaction(function () use ($tarjetaCredito, $monto) {
+            $lockedTarjeta = TarjetaCredito::where('id', $tarjetaCredito->id)->lockForUpdate()->first();
+            $nuevaDeuda = $lockedTarjeta->deuda_actual + $monto;
+            
+            if ($nuevaDeuda > $lockedTarjeta->limite_credito) {
+                return false;
+            }
 
-        // Validar que no se exceda el límite
-        if ($nuevaDeuda > $tarjetaCredito->limite_credito) {
+            $lockedTarjeta->update([
+                'deuda_actual' => $nuevaDeuda
+            ]);
+            
+            return $lockedTarjeta;
+        });
+
+        if ($tarjetaCredito === false) {
             return response()->json([
                 'message' => 'El monto ingresado supera el límite de crédito de la tarjeta.'
             ], 422);
         }
-
-        $tarjetaCredito->update([
-            'deuda_actual' => $nuevaDeuda
-        ]);
 
         // Ejecutar evaluación de notificaciones inmediatamente
         \Illuminate\Support\Facades\Artisan::call('tarjetas:aplicar-intereses');
