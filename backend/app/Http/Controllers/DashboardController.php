@@ -14,12 +14,8 @@ class DashboardController extends Controller
     {
         $user = $request->user();
         
-        // Auto-generate notifications (only once a day per user)
-        $cacheKey = 'notifs_generated_' . $user->id;
-        if (!Cache::has($cacheKey)) {
-            $notificationService->generateForUser($user);
-            Cache::put($cacheKey, true, now()->endOfDay());
-        }
+        // Auto-generate notifications
+        $notificationService->generateForUser($user);
         
         $totals = Movimiento::where('user_id', $user->id)
             ->selectRaw("
