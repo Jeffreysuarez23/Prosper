@@ -129,6 +129,19 @@ class PayPalController extends Controller
                 $plan = $request->plan;
                 $cycle = $request->billing_cycle;
 
+                // Prices in USD
+                $prices = [
+                    'pro' => ['monthly' => '3.99', 'annual' => '39.99'],
+                    'ultra' => ['monthly' => '6.99', 'annual' => '69.99']
+                ];
+                $expectedPrice = $prices[$plan][$cycle];
+                $capturedAmount = $response->json('purchase_units.0.payments.captures.0.amount.value');
+
+                if ((float)$capturedAmount < (float)$expectedPrice) {
+                    Log::error("PayPal Fraud Attempt: User {$user->id} captured \${$capturedAmount} but requested {$plan} {$cycle} (\${$expectedPrice}).");
+                    return response()->json(['error' => 'El monto pagado no coincide con el plan seleccionado. Reembolso automático en proceso o contacte soporte.'], 400);
+                }
+
                 // Update database
                 $startsAt = now();
                 $endsAt = $cycle === 'monthly' ? now()->addMonth() : now()->addYear();
