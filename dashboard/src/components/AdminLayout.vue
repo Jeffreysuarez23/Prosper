@@ -15,7 +15,7 @@ const handleLogout = async () => {
   }
   localStorage.removeItem('token')
   localStorage.removeItem('user')
-  window.location.href = 'http://localhost:5173/login'
+  window.location.href = 'https://prosper-frontend-pi.vercel.app/login'
 }
 
 onMounted(async () => {
@@ -61,7 +61,7 @@ onMounted(async () => {
         <RouterLink to="/perfil" class="action-btn outline-btn" title="Editar Perfil">
           Perfil
         </RouterLink>
-        <a href="http://localhost:5173/" class="action-btn outline-btn" title="Ir a App Principal">
+        <a href="https://prosper-frontend-pi.vercel.app/" class="action-btn outline-btn" title="Ir a App Principal">
           App Principal
         </a>
         <button @click="handleLogout" class="action-btn danger-btn" title="Cerrar Sesión">
