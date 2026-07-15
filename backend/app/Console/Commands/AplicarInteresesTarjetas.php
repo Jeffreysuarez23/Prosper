@@ -111,10 +111,13 @@ class AplicarInteresesTarjetas extends Command
 
                 if (!$existeNotif) {
                     $tarjeta->user->notificaciones()->create([
+                        'tipo' => $categoriaNotif === 'warning' ? 'warning' : 'info',
+                        'icono' => '💳',
                         'titulo' => $tituloNotif,
                         'mensaje' => $mensajeNotif,
                         'categoria' => $categoriaNotif,
                         'leida' => false,
+                        'accion_texto' => 'Ver Tarjetas',
                         'accion_url' => '/tarjetas-credito'
                     ]);
                     $countNotificaciones++;

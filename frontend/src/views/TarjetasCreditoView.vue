@@ -333,7 +333,10 @@ const savePay = async () => {
     }
     fetchData()
     if (refreshHeaderBalance) refreshHeaderBalance()
-  } catch (error) { console.error(error) } finally {
+  } catch (error) {
+    console.error(error)
+    Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'Error al procesar', showConfirmButton: false, timer: 3000, background: 'var(--surface)', color: 'var(--text)' })
+  } finally {
     isSubmitting.value = false
   }
 }
@@ -378,7 +381,10 @@ const saveDebt = async () => {
     Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Deuda agregada exitosamente', showConfirmButton: false, timer: 3000, background: 'var(--surface)', color: 'var(--text)' })
     fetchData()
     if (refreshHeaderBalance) refreshHeaderBalance()
-  } catch (error) { console.error(error) } finally {
+  } catch (error) {
+    console.error(error)
+    Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'Error al procesar', showConfirmButton: false, timer: 3000, background: 'var(--surface)', color: 'var(--text)' })
+  } finally {
     isSubmitting.value = false
   }
 }
