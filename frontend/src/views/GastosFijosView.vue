@@ -108,6 +108,8 @@ const formatCurrency = (val) => {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2 }).format(val || 0)
 }
 
+const isSubmitting = ref(false)
+
 // Modals State
 const showExpenseModal = ref(false)
 const expenseEditId = ref(null)
@@ -212,6 +214,7 @@ const openExpenseDeposit = (g) => {
 const saveExpense = async () => {
   if (!expenseData.value.nombre || !expenseData.value.monto || !expenseData.value.dia_vencimiento) return
   
+  isSubmitting.value = true
   try {
     if (expenseEditId.value) {
       await api.put(`/gastos-fijos/${expenseEditId.value}`, expenseData.value)
@@ -248,6 +251,8 @@ const saveExpense = async () => {
         color: 'var(--text)'
       })
     }
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -272,6 +277,7 @@ const saveDeposit = async () => {
 
   const newMontoActual = depositData.value.monto_pagado_mes + abono
 
+  isSubmitting.value = true
   try {
     await api.post(`/gastos-fijos/${depositData.value.id}/abono`, { abono })
     showDepositModal.value = false
@@ -307,6 +313,8 @@ const saveDeposit = async () => {
     if (refreshHeaderBalance) refreshHeaderBalance()
   } catch (error) {
     console.error(error)
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -485,7 +493,7 @@ const deleteExpense = async (id) => {
         </div>
         <div class="form-actions">
           <button type="button" class="btn-ghost" @click="showExpenseModal = false">Cancelar</button>
-          <button type="submit" class="btn-accent">Guardar Gasto</button>
+          <button type="submit" class="btn-accent" :disabled="isSubmitting">Guardar Gasto</button>
         </div>
       </form>
     </div>
@@ -515,7 +523,7 @@ const deleteExpense = async (id) => {
         </div>
         <div class="form-actions" style="margin-top:24px;">
           <button type="button" class="btn-ghost" @click="showDepositModal = false">Cancelar</button>
-          <button type="submit" class="btn-accent" style="background:var(--accent);">Pagar</button>
+          <button type="submit" class="btn-accent" style="background:var(--accent);" :disabled="isSubmitting">Pagar</button>
         </div>
       </form>
     </div>

@@ -7,6 +7,7 @@ const refreshHeaderBalance = inject('refreshHeaderBalance')
 const headerBalance = inject('headerBalance')
 
 const data = ref([])
+const isSubmitting = ref(false)
 const loading = ref(true)
 const searchQuery = ref('')
 const statusFilter = ref('')
@@ -225,6 +226,7 @@ const openEditCard = (t) => {
 
 const saveCard = async () => {
   if (!cardData.value.nombre || !cardData.value.limite_credito) return
+  isSubmitting.value = true
   try {
     if (cardEditId.value) {
       await api.put(`/tarjetas-credito/${cardEditId.value}`, cardData.value)
@@ -251,6 +253,8 @@ const saveCard = async () => {
         color: 'var(--text)'
       })
     }
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -314,6 +318,7 @@ const savePay = async () => {
     Swal.fire({ icon: 'warning', title: 'Balance insuficiente', text: 'No tienes suficiente balance para este pago.', confirmButtonText: 'Entendido', confirmButtonColor: 'var(--accent)', customClass: { popup: 'swal-custom-popup', title: 'swal-custom-title', htmlContainer: 'swal-custom-content', confirmButton: 'swal-custom-confirm' } })
     return
   }
+  isSubmitting.value = true
   try {
     await api.post(`/tarjetas-credito/${payData.value.id}/pago`, { monto })
     showPayModal.value = false
@@ -328,7 +333,9 @@ const savePay = async () => {
     }
     fetchData()
     if (refreshHeaderBalance) refreshHeaderBalance()
-  } catch (error) { console.error(error) }
+  } catch (error) { console.error(error) } finally {
+    isSubmitting.value = false
+  }
 }
 
 // ── Debt Modal ──
@@ -364,13 +371,16 @@ const saveDebt = async () => {
     Swal.fire({ icon: 'warning', title: 'Límite excedido', text: 'El monto ingresado supera el límite de crédito disponible.', confirmButtonText: 'Entendido', confirmButtonColor: 'var(--accent)', customClass: { popup: 'swal-custom-popup', title: 'swal-custom-title', htmlContainer: 'swal-custom-content', confirmButton: 'swal-custom-confirm' } })
     return
   }
+  isSubmitting.value = true
   try {
     await api.post(`/tarjetas-credito/${debtData.value.id}/deuda`, { monto })
     showDebtModal.value = false
     Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Deuda agregada exitosamente', showConfirmButton: false, timer: 3000, background: 'var(--surface)', color: 'var(--text)' })
     fetchData()
     if (refreshHeaderBalance) refreshHeaderBalance()
-  } catch (error) { console.error(error) }
+  } catch (error) { console.error(error) } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
 
@@ -595,7 +605,7 @@ const saveDebt = async () => {
         </div>
         <div class="form-actions">
           <button type="button" class="btn-ghost" @click="showCardModal = false">Cancelar</button>
-          <button type="submit" class="btn-accent">Guardar Tarjeta</button>
+          <button type="submit" class="btn-accent" :disabled="isSubmitting">Guardar Tarjeta</button>
         </div>
       </form>
     </div>
@@ -626,7 +636,7 @@ const saveDebt = async () => {
         </div>
         <div class="form-actions" style="margin-top:24px;">
           <button type="button" class="btn-ghost" @click="showPayModal = false">Cancelar</button>
-          <button type="submit" class="btn-accent" style="background:var(--accent);">Pagar</button>
+          <button type="submit" class="btn-accent" style="background:var(--accent);" :disabled="isSubmitting">Pagar</button>
         </div>
       </form>
     </div>
@@ -658,7 +668,7 @@ const saveDebt = async () => {
         </div>
         <div class="form-actions" style="margin-top:24px;">
           <button type="button" class="btn-ghost" @click="showDebtModal = false">Cancelar</button>
-          <button type="submit" class="btn-accent" style="background:var(--amber-500);">Registrar</button>
+          <button type="submit" class="btn-accent" style="background:var(--amber-500);" :disabled="isSubmitting">Registrar</button>
         </div>
       </form>
     </div>

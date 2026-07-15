@@ -84,15 +84,17 @@ class ObjetivoController extends Controller
             'icono' => 'nullable|string|max:10',
         ]);
 
-        $old_monto_actual = $objetivo->monto_actual;
-        DB::transaction(function () use ($request, $objetivo, $validated, $old_monto_actual) {
-            $objetivo->update($validated);
+        $objetivo = DB::transaction(function () use ($request, $objetivo, $validated) {
+            $lockedObjetivo = Objetivo::where('id', $objetivo->id)->lockForUpdate()->first();
+            $old_monto_actual = $lockedObjetivo->monto_actual;
+            
+            $lockedObjetivo->update($validated);
             
             if (isset($validated['monto_actual'])) {
                 $diff = $validated['monto_actual'] - $old_monto_actual;
                 if ($diff != 0) {
                     $tipo_mov = $diff > 0 ? 'gasto' : 'ingreso';
-                    $desc = ($diff > 0 ? "Abono a objetivo: " : "Retiro de objetivo: ") . $objetivo->nombre;
+                    $desc = ($diff > 0 ? "Abono a objetivo: " : "Retiro de objetivo: ") . $lockedObjetivo->nombre;
                     
                     $request->user()->movimientos()->create([
                         'tipo' => $tipo_mov,
@@ -105,12 +107,14 @@ class ObjetivoController extends Controller
                 }
             }
 
-            if ($objetivo->monto_actual >= $objetivo->monto_objetivo) {
+            if ($lockedObjetivo->monto_actual >= $lockedObjetivo->monto_objetivo) {
                 $request->user()->notificaciones()
                     ->where('categoria', 'objetivo_vencer')
-                    ->where('accion_url', 'LIKE', '%id=' . $objetivo->id . '%')
+                    ->where('accion_url', 'LIKE', '%id=' . $lockedObjetivo->id . '%')
                     ->delete();
             }
+            
+            return $lockedObjetivo;
         });
 
         return response()->json($objetivo);

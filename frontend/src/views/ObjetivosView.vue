@@ -7,6 +7,7 @@ const refreshHeaderBalance = inject('refreshHeaderBalance')
 const headerBalance = inject('headerBalance')
 
 const data = ref([])
+const isSubmitting = ref(false)
 const loading = ref(true)
 
 const searchQuery = ref('')
@@ -214,6 +215,7 @@ const saveGoal = async () => {
     monto_actual: saved // Default to 0 if empty
   }
 
+  isSubmitting.value = true
   try {
     if (goalEditId.value) {
       await api.put(`/objetivos/${goalEditId.value}`, payload)
@@ -235,6 +237,8 @@ const saveGoal = async () => {
     if (refreshHeaderBalance) refreshHeaderBalance()
   } catch (error) {
     console.error(error)
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -326,6 +330,7 @@ const saveDeposit = async () => {
 
   const newMontoActual = depositData.value.monto_actual + abono
 
+  isSubmitting.value = true
   try {
     await api.put(`/objetivos/${depositData.value.id}`, {
       monto_actual: newMontoActual
@@ -362,6 +367,8 @@ const saveDeposit = async () => {
     if (refreshHeaderBalance) refreshHeaderBalance()
   } catch (error) {
     console.error(error)
+  } finally {
+    isSubmitting.value = false
   }
 }
 </script>
@@ -502,7 +509,7 @@ const saveDeposit = async () => {
         </div>
         <div class="form-actions">
           <button type="button" class="btn-ghost" @click="showGoalModal = false">Cancelar</button>
-          <button type="submit" class="btn-accent">Guardar Meta</button>
+          <button type="submit" class="btn-accent" :disabled="isSubmitting">Guardar Meta</button>
         </div>
       </form>
     </div>
@@ -530,7 +537,7 @@ const saveDeposit = async () => {
         </div>
         <div class="form-actions" style="margin-top:24px;">
           <button type="button" class="btn-ghost" @click="showDepositModal = false">Cancelar</button>
-          <button type="submit" class="btn-accent">Añadir Fondos</button>
+          <button type="submit" class="btn-accent" style="background:var(--accent);" :disabled="isSubmitting">Añadir Fondos</button>
         </div>
       </form>
     </div>

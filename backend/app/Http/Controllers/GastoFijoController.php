@@ -111,39 +111,46 @@ class GastoFijoController extends Controller
         ]);
 
         $abono = $validated['abono'];
-        $currentMonth = now()->format('Y-m');
-        $lastPaidMonth = $gastoFijo->fecha_ultimo_pago ? \Carbon\Carbon::parse($gastoFijo->fecha_ultimo_pago)->format('Y-m') : '';
 
-        if ($lastPaidMonth === $currentMonth) {
-            $nuevo_pagado = $gastoFijo->monto_pagado_mes + $abono;
-        } else {
-            $nuevo_pagado = $abono;
-        }
+        $gastoFijo = \Illuminate\Support\Facades\DB::transaction(function () use ($request, $gastoFijo, $abono) {
+            $lockedGasto = GastoFijo::where('id', $gastoFijo->id)->lockForUpdate()->first();
 
-        if ($nuevo_pagado > $gastoFijo->monto) {
-            $nuevo_pagado = $gastoFijo->monto;
-        }
+            $currentMonth = now()->format('Y-m');
+            $lastPaidMonth = $lockedGasto->fecha_ultimo_pago ? \Carbon\Carbon::parse($lockedGasto->fecha_ultimo_pago)->format('Y-m') : '';
 
-        $gastoFijo->update([
-            'fecha_ultimo_pago' => now()->toDateString(),
-            'monto_pagado_mes' => $nuevo_pagado
-        ]);
+            if ($lastPaidMonth === $currentMonth) {
+                $nuevo_pagado = $lockedGasto->monto_pagado_mes + $abono;
+            } else {
+                $nuevo_pagado = $abono;
+            }
 
-        $request->user()->movimientos()->create([
-            'tipo' => 'gasto',
-            'monto' => $abono,
-            'fecha' => now()->toDateString(),
-            'categoria' => 'Servicios',
-            'descripcion' => "Pago parcial de gasto fijo: " . $gastoFijo->nombre,
-            'metodo_pago' => 'efectivo',
-        ]);
+            if ($nuevo_pagado > $lockedGasto->monto) {
+                $nuevo_pagado = $lockedGasto->monto;
+            }
 
-        if ($nuevo_pagado >= $gastoFijo->monto) {
-            $request->user()->notificaciones()
-                ->where('categoria', 'gasto_fijo')
-                ->where('titulo', 'LIKE', '%' . $gastoFijo->nombre . '%')
-                ->delete();
-        }
+            $lockedGasto->update([
+                'fecha_ultimo_pago' => now()->toDateString(),
+                'monto_pagado_mes' => $nuevo_pagado
+            ]);
+
+            $request->user()->movimientos()->create([
+                'tipo' => 'gasto',
+                'monto' => $abono,
+                'fecha' => now()->toDateString(),
+                'categoria' => 'Servicios',
+                'descripcion' => "Pago parcial de gasto fijo: " . $lockedGasto->nombre,
+                'metodo_pago' => 'efectivo',
+            ]);
+
+            if ($nuevo_pagado >= $lockedGasto->monto) {
+                $request->user()->notificaciones()
+                    ->where('categoria', 'gasto_fijo')
+                    ->where('titulo', 'LIKE', '%' . $lockedGasto->nombre . '%')
+                    ->delete();
+            }
+
+            return $lockedGasto;
+        });
 
         return response()->json($gastoFijo);
     }
