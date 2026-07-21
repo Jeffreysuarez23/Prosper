@@ -114,6 +114,11 @@ class ObjetivoController extends Controller
                     ->whereIn('categoria', ['objetivo_vencer', 'objetivo_recordatorio'])
                     ->where('accion_url', 'LIKE', '%id=' . $lockedObjetivo->id . '%')
                     ->delete();
+            } else {
+                $request->user()->notificaciones()
+                    ->where('categoria', 'objetivo_logrado')
+                    ->where('accion_url', 'LIKE', '%id=' . $lockedObjetivo->id . '%')
+                    ->delete();
             }
             
             return $lockedObjetivo;
