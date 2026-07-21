@@ -131,6 +131,16 @@ const depositData = ref({
 })
 const displayDepositAbono = ref('')
 
+const showWithdrawModal = ref(false)
+const withdrawData = ref({
+  id: null,
+  nombre: '',
+  monto: 0,
+  monto_pagado_mes: 0,
+  retiro: ''
+})
+const displayWithdrawAmount = ref('')
+
 const emojis = ['🏠', '💧', '⚡', '📶', '📱', '📺', '🚗', '🛒', '💳', '🎓', '🏥', '🛡️', '🐾', '⚽', '🎯']
 
 // Formatters
@@ -178,6 +188,36 @@ const formatInputDeposit = (e) => {
   e.target.value = displayDepositAbono.value
 }
 
+const formatInputWithdraw = (e) => {
+  let rawValue = e.target.value.replace(/\D/g, '')
+  if (!rawValue) {
+    displayWithdrawAmount.value = ''
+    withdrawData.value.retiro = ''
+    return
+  }
+  
+  let numericValue = parseInt(rawValue)
+  const maxAllowed = withdrawData.value.monto_pagado_mes
+  
+  if (numericValue > maxAllowed) {
+    numericValue = maxAllowed
+    Swal.fire({
+      toast: true,
+      position: 'bottom-end',
+      icon: 'error',
+      title: 'No puedes retirar más de lo abonado',
+      showConfirmButton: false,
+      timer: 3000,
+      background: 'var(--surface)',
+      color: 'var(--text)',
+      customClass: { popup: 'swal-custom-popup', title: 'swal-custom-title' }
+    })
+  }
+
+  displayWithdrawAmount.value = new Intl.NumberFormat('es-CO').format(numericValue)
+  withdrawData.value.retiro = numericValue
+  e.target.value = displayWithdrawAmount.value
+}
 // Actions
 const openNewExpense = () => {
   expenseEditId.value = null
@@ -209,6 +249,19 @@ const openExpenseDeposit = (g) => {
   }
   displayDepositAbono.value = ''
   showDepositModal.value = true
+}
+
+const openExpenseWithdraw = (g) => {
+  const info = getStatusInfo(g)
+  withdrawData.value = {
+    id: g.id,
+    nombre: g.nombre,
+    monto: parseFloat(g.monto),
+    monto_pagado_mes: info.pagado,
+    retiro: ''
+  }
+  displayWithdrawAmount.value = ''
+  showWithdrawModal.value = true
 }
 
 const saveExpense = async () => {
@@ -318,6 +371,37 @@ const saveDeposit = async () => {
   }
 }
 
+const saveExpenseWithdraw = async () => {
+  const retiro = parseFloat(withdrawData.value.retiro) || 0
+  if (retiro <= 0) return
+
+  const maxWithdraw = withdrawData.value.monto_pagado_mes
+  if (retiro > maxWithdraw) return
+
+  isSubmitting.value = true
+  try {
+    await api.post(`/gastos-fijos/${withdrawData.value.id}/retirar`, { retiro })
+    showWithdrawModal.value = false
+    
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'success',
+      title: 'Retiro registrado',
+      showConfirmButton: false,
+      timer: 3000,
+      background: 'var(--surface)',
+      color: 'var(--text)'
+    })
+    
+    fetchData()
+    if (refreshHeaderBalance) refreshHeaderBalance()
+  } catch (error) {
+    console.error(error)
+  } finally {
+    isSubmitting.value = false
+  }
+}
 const deleteExpense = async (id) => {
   const result = await Swal.fire({
     title: '¿Eliminar Gasto Fijo?',
@@ -433,6 +517,7 @@ const deleteExpense = async (id) => {
         <div class="goal-actions">
           <button v-if="!getStatusInfo(g).isPaid" class="goal-btn primary" @click="openExpenseDeposit(g)" style="background:var(--accent); color:white; border:none;">Abonar Gasto</button>
           <button v-else class="goal-btn" style="color:var(--green); border-color:var(--green); font-weight:600; pointer-events:none;">Pagado este mes</button>
+          <button v-if="getStatusInfo(g).pagado > 0" class="goal-btn danger" @click="openExpenseWithdraw(g)">Retirar</button>
           <button class="goal-btn" @click="openEditExpense(g)">Editar</button>
           <button class="goal-btn danger" @click="deleteExpense(g.id)">Eliminar</button>
         </div>
@@ -519,11 +604,57 @@ const deleteExpense = async (id) => {
       <form @submit.prevent="saveDeposit" autocomplete="off">
         <div class="form-group" style="text-align:left;">
           <label>Monto a abonar</label>
-          <input type="text" class="form-control" :value="displayDepositAbono" @input="formatInputDeposit" required placeholder="0.00">
+          <div style="position: relative;">
+            <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-muted);">$</span>
+            <input type="text" class="form-control" v-model="displayDepositAbono" @input="formatInputDeposit" required placeholder="0.00" style="padding-left: 32px; font-size: 1.25rem; height: 56px;">
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 0.85rem; color: var(--text-muted);">
+            <span>Falta para completar:</span>
+            <span style="font-weight: 600; color: var(--text);">{{ formatCurrency(depositData.monto - depositData.monto_pagado_mes).replace('COP', '').trim() }}</span>
+          </div>
         </div>
         <div class="form-actions" style="margin-top:24px;">
           <button type="button" class="btn-ghost" @click="showDepositModal = false">Cancelar</button>
           <button type="submit" class="btn-accent" style="background:var(--accent);" :disabled="isSubmitting">Pagar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Retirar Gasto -->
+  <div v-if="showWithdrawModal" class="modal" style="display: flex;">
+    <div class="modal-content" style="max-width:400px; text-align:center; padding-top:32px;">
+      <div class="modal-head premium-head" style="margin-bottom:16px;">
+        <div class="head-icon">💸</div>
+        <div class="head-text" style="text-align:left;">
+          <h2>Retirar Dinero</h2>
+          <p style="font-size: 0.85rem; opacity: 0.9; margin: 4px 0 0 0;">
+            {{ withdrawData.nombre }}
+          </p>
+        </div>
+        <button class="modal-close" @click="showWithdrawModal = false" type="button" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+      <form @submit.prevent="saveExpenseWithdraw" autocomplete="off">
+        <div class="form-group" style="text-align:left;">
+          <label>¿Cuánto deseas retirar?</label>
+          <div style="position: relative;">
+            <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-muted);">$</span>
+            <input type="text" class="form-control" v-model="displayWithdrawAmount" @input="formatInputWithdraw" required placeholder="0.00" style="padding-left: 32px; font-size: 1.25rem; height: 56px;">
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; color: var(--text-muted);">
+            <span>Disponible para retirar:</span>
+            <span style="font-weight: 600; color: var(--text);">{{ formatCurrency(withdrawData.monto_pagado_mes).replace('COP', '').trim() }}</span>
+          </div>
+        </div>
+        <div class="form-actions" style="margin-top:24px;">
+          <button type="button" class="btn-ghost" @click="showWithdrawModal = false">Cancelar</button>
+          <button type="submit" class="btn-accent" style="background:var(--red);" :disabled="isSubmitting">
+            {{ isSubmitting ? 'Procesando...' : 'Retirar Dinero' }}
+          </button>
         </div>
       </form>
     </div>

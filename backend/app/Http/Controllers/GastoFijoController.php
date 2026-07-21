@@ -154,4 +154,49 @@ class GastoFijoController extends Controller
 
         return response()->json($gastoFijo);
     }
+
+    public function withdrawPartial(Request $request, GastoFijo $gastoFijo)
+    {
+        if ($gastoFijo->user_id !== $request->user()->id) abort(403);
+
+        $validated = $request->validate([
+            'retiro' => 'required|numeric|min:0.01'
+        ]);
+
+        $retiro = $validated['retiro'];
+
+        $gastoFijo = \Illuminate\Support\Facades\DB::transaction(function () use ($request, $gastoFijo, $retiro) {
+            $lockedGasto = GastoFijo::where('id', $gastoFijo->id)->lockForUpdate()->first();
+
+            $currentMonth = now()->format('Y-m');
+            $lastPaidMonth = $lockedGasto->fecha_ultimo_pago ? \Carbon\Carbon::parse($lockedGasto->fecha_ultimo_pago)->format('Y-m') : '';
+
+            if ($lastPaidMonth !== $currentMonth || $lockedGasto->monto_pagado_mes <= 0) {
+                abort(400, 'No hay abonos en este mes para retirar.');
+            }
+
+            if ($retiro > $lockedGasto->monto_pagado_mes) {
+                abort(400, 'No puedes retirar más de lo que has abonado.');
+            }
+
+            $nuevo_pagado = $lockedGasto->monto_pagado_mes - $retiro;
+
+            $lockedGasto->update([
+                'monto_pagado_mes' => $nuevo_pagado
+            ]);
+
+            $request->user()->movimientos()->create([
+                'tipo' => 'ingreso',
+                'monto' => $retiro,
+                'fecha' => now()->toDateString(),
+                'categoria' => 'Reembolso',
+                'descripcion' => "Retiro parcial de gasto fijo: " . $lockedGasto->nombre,
+                'metodo_pago' => 'efectivo',
+            ]);
+
+            return $lockedGasto;
+        });
+
+        return response()->json($gastoFijo);
+    }
 }
