@@ -28,6 +28,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('objetivos', ObjetivoController::class);
     Route::apiResource('gastos-fijos', GastoFijoController::class);
     Route::post('gastos-fijos/{gastoFijo}/abono', [GastoFijoController::class, 'payPartial']);
+    Route::post('gastos-fijos/{gastoFijo}/retirar', [GastoFijoController::class, 'withdrawPartial']);
     
     Route::apiResource('tarjetas-credito', TarjetaCreditoController::class);
     Route::post('tarjetas-credito/{tarjetaCredito}/pago', [TarjetaCreditoController::class, 'pagarTarjeta']);
