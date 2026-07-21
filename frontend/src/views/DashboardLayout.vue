@@ -221,6 +221,8 @@ const handleSaveTx = async () => {
 }
 
 const headerBalance = ref(0)
+const headerBalanceMensual = ref(0)
+const isMonthlyBalance = ref(false)
 const unreadNotifs = ref(0)
 const formatCurrency = (value) => {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2 }).format(value)
@@ -230,6 +232,7 @@ const fetchHeaderBalance = async () => {
   try {
     const res = await api.get('/dashboard')
     headerBalance.value = res.data.balance_global || 0
+    headerBalanceMensual.value = res.data.balance_mensual || 0
     unreadNotifs.value = res.data.unread_notifications || 0
   } catch (error) {
     console.error('Error fetching global balance', error)
@@ -521,9 +524,18 @@ const renderPayPalButtons = async () => {
         </div>
         
         <div class="topbar-actions">
-          <div class="topbar-balance" id="topbarBalance">
-            <span class="balance-label">Balance total</span>
-            <strong class="balance-value" id="headerBalance">{{ formatCurrency(headerBalance) }}</strong>
+          <div class="topbar-balance" id="topbarBalance" style="display: flex; align-items: center; gap: 8px;">
+            <div style="display: flex; flex-direction: column; align-items: flex-end;">
+              <span class="balance-label" style="display: flex; align-items: center; gap: 6px;">
+                {{ isMonthlyBalance ? 'Balance mensual' : 'Balance total' }}
+                <button @click="isMonthlyBalance = !isMonthlyBalance" style="background: none; border: none; padding: 0; margin: 0; cursor: pointer; color: var(--accent); display: flex; align-items: center;" title="Cambiar vista de balance">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16" />
+                  </svg>
+                </button>
+              </span>
+              <strong class="balance-value" id="headerBalance">{{ formatCurrency(isMonthlyBalance ? headerBalanceMensual : headerBalance) }}</strong>
+            </div>
           </div>
           <button class="btn-accent" id="btnNewTx" @click="openTxModal()">
             <svg viewBox="0 0 24 24" width="16" height="16">

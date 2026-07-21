@@ -18,28 +18,41 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        $user = new User();
-        $user->name = $request->name;
-        $user->email = $request->email;
-        $user->telefono = $request->telefono;
-        $user->password = Hash::make($request->password);
-        $user->role_id = 2; // Default user role
-        $user->tema_preferido = 'light';
-        $user->save();
+        try {
+            \Illuminate\Support\Facades\DB::beginTransaction();
 
-        Membresia::create([
-            'user_id' => $user->id,
-            'plan' => 'gratis',
-            'status' => 'active'
-        ]);
+            $user = new User();
+            $user->name = $request->name;
+            $user->email = $request->email;
+            $user->telefono = $request->telefono;
+            $user->password = Hash::make($request->password);
+            $user->role_id = 2; // Default user role
+            $user->tema_preferido = 'light';
+            $user->save();
 
-        $user->load('membresia');
+            Membresia::create([
+                'user_id' => $user->id,
+                'plan' => 'gratis',
+                'status' => 'active'
+            ]);
 
-        return response()->json([
-            'message' => 'Usuario creado exitosamente',
-            'token' => $user->createToken('auth_token')->plainTextToken,
-            'user' => $user
-        ], 201);
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            $user->load('membresia');
+
+            return response()->json([
+                'message' => 'Usuario creado exitosamente',
+                'token' => $token,
+                'user' => $user
+            ], 201);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return response()->json([
+                'message' => 'Error interno al registrar. Por favor, intenta de nuevo.'
+            ], 500);
+        }
     }
 
     public function login(Request $request)
