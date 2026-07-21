@@ -632,7 +632,24 @@ const saveWithdraw = async () => {
       <form @submit.prevent="saveDeposit" autocomplete="off">
         <div class="form-group" style="text-align:left;">
           <label>Monto a abonar</label>
-          <input type="text" class="form-control" v-model="displayDepositAbono" @input="formatInputDeposit" placeholder="0.00" required>
+          <div style="position: relative;">
+            <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-muted);">$</span>
+            <input type="text" 
+                   class="form-control" 
+                   v-model="displayDepositAbono" 
+                   @input="formatInputDeposit" 
+                   placeholder="0.00" 
+                   style="padding-left: 32px; font-size: 1.25rem; height: 56px;" 
+                   required>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; color: var(--text-muted);">
+            <span>Disponible para abonar:</span>
+            <span style="font-weight: 600; color: var(--text);">{{ formatCurrency(headerBalance).replace('COP', '').trim() }}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 0.85rem; color: var(--text-muted);">
+            <span>Falta para completar:</span>
+            <span style="font-weight: 600; color: var(--text);">{{ formatCurrency(depositData.monto_objetivo - depositData.monto_actual).replace('COP', '').trim() }}</span>
+          </div>
         </div>
         <div class="form-actions" style="margin-top:24px;">
           <button type="button" class="btn-ghost" @click="showDepositModal = false">Cancelar</button>
