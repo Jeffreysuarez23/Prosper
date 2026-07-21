@@ -515,7 +515,7 @@ const deleteExpense = async (id) => {
         </div>
         
         <div class="goal-actions">
-          <button v-if="!getStatusInfo(g).isPaid" class="goal-btn primary" @click="openExpenseDeposit(g)" style="background:var(--accent); color:white; border:none;">Abonar Gasto</button>
+          <button v-if="!getStatusInfo(g).isPaid" class="goal-btn primary" @click="openExpenseDeposit(g)" style="background:var(--accent); color:white; border:none;">Abonar</button>
           <button v-else class="goal-btn" style="color:var(--green); border-color:var(--green); font-weight:600; pointer-events:none;">Pagado este mes</button>
           <button v-if="getStatusInfo(g).pagado > 0" class="goal-btn danger" @click="openExpenseWithdraw(g)">Retirar</button>
           <button class="goal-btn" @click="openEditExpense(g)">Editar</button>
@@ -592,7 +592,7 @@ const deleteExpense = async (id) => {
         <div class="head-text" style="text-align:left;">
           <h2>Abonar Gasto</h2>
           <p>
-            {{ depositData.nombre }} — Pagado: {{ formatCurrency(depositData.monto_pagado_mes).replace('COP', '').trim() }} de {{ formatCurrency(depositData.monto).replace('COP', '').trim() }}
+            {{ depositData.nombre }}
           </p>
         </div>
         <button class="modal-close" @click="showDepositModal = false" aria-label="Cerrar">
@@ -605,8 +605,7 @@ const deleteExpense = async (id) => {
         <div class="form-group" style="text-align:left;">
           <label>Monto a abonar</label>
           <div style="position: relative;">
-            <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-muted);">$</span>
-            <input type="text" class="form-control" v-model="displayDepositAbono" @input="formatInputDeposit" required placeholder="0.00" style="padding-left: 32px; font-size: 1.25rem; height: 56px;">
+            <input type="text" class="form-control" v-model="displayDepositAbono" @input="formatInputDeposit" required placeholder="0.00">
           </div>
           <div style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 0.85rem; color: var(--text-muted);">
             <span>Falta para completar:</span>
@@ -642,8 +641,7 @@ const deleteExpense = async (id) => {
         <div class="form-group" style="text-align:left;">
           <label>¿Cuánto deseas retirar?</label>
           <div style="position: relative;">
-            <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-muted);">$</span>
-            <input type="text" class="form-control" v-model="displayWithdrawAmount" @input="formatInputWithdraw" required placeholder="0.00" style="padding-left: 32px; font-size: 1.25rem; height: 56px;">
+            <input type="text" class="form-control" v-model="displayWithdrawAmount" @input="formatInputWithdraw" required placeholder="0.00">
           </div>
           <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; color: var(--text-muted);">
             <span>Disponible para retirar:</span>
