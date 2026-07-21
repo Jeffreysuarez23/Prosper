@@ -642,10 +642,6 @@ const saveWithdraw = async () => {
                    style="padding-left: 32px; font-size: 1.25rem; height: 56px;" 
                    required>
           </div>
-          <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; color: var(--text-muted);">
-            <span>Disponible para abonar:</span>
-            <span style="font-weight: 600; color: var(--text);">{{ formatCurrency(headerBalance).replace('COP', '').trim() }}</span>
-          </div>
           <div style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 0.85rem; color: var(--text-muted);">
             <span>Falta para completar:</span>
             <span style="font-weight: 600; color: var(--text);">{{ formatCurrency(depositData.monto_objetivo - depositData.monto_actual).replace('COP', '').trim() }}</span>
