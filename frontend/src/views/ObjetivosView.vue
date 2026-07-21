@@ -432,6 +432,7 @@ const saveDeposit = async () => {
               {{ g.nombre }} <span v-if="getPct(g.monto_actual, g.monto_objetivo) >= 100">🎉</span>
             </div>
             <div class="goal-deadline">Cumple antes del {{ formatDate(g.fecha_limite) }}</div>
+            <div v-if="g.dia_recordatorio" class="goal-deadline" style="margin-top: 2px;">Paga antes del {{ g.dia_recordatorio }}</div>
           </div>
         </div>
         
