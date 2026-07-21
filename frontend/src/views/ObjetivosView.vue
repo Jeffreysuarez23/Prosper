@@ -373,6 +373,95 @@ const saveDeposit = async () => {
     isSubmitting.value = false
   }
 }
+
+// -----------------------------
+// WITHDRAW MODAL LOGIC
+// -----------------------------
+const showWithdrawModal = ref(false)
+const withdrawData = ref({
+  id: null,
+  nombre: '',
+  monto_actual: 0,
+  monto_objetivo: 0,
+  retiro: ''
+})
+const displayWithdrawAmount = ref('')
+
+const formatInputWithdraw = (e) => {
+  let rawValue = e.target.value.replace(/\D/g, '')
+  if (!rawValue) {
+    displayWithdrawAmount.value = ''
+    withdrawData.value.retiro = ''
+    return
+  }
+  
+  let numericValue = parseInt(rawValue)
+  const maxAllowed = withdrawData.value.monto_actual
+  
+  if (numericValue > maxAllowed) {
+    numericValue = maxAllowed
+    Swal.fire({
+      toast: true,
+      position: 'bottom-end',
+      icon: 'error',
+      title: 'No puedes retirar más de lo ahorrado',
+      showConfirmButton: false,
+      timer: 3000,
+      background: 'var(--surface)',
+      color: 'var(--text)'
+    })
+  }
+
+  displayWithdrawAmount.value = new Intl.NumberFormat('es-CO').format(numericValue)
+  withdrawData.value.retiro = numericValue
+  e.target.value = displayWithdrawAmount.value
+}
+
+const openWithdraw = (g) => {
+  withdrawData.value = {
+    id: g.id,
+    nombre: g.nombre,
+    monto_actual: parseFloat(g.monto_actual),
+    monto_objetivo: parseFloat(g.monto_objetivo),
+    retiro: ''
+  }
+  displayWithdrawAmount.value = ''
+  showWithdrawModal.value = true
+}
+
+const saveWithdraw = async () => {
+  const retiro = parseFloat(withdrawData.value.retiro) || 0
+  if (retiro <= 0) return
+
+  if (retiro > withdrawData.value.monto_actual) return
+
+  const newMontoActual = withdrawData.value.monto_actual - retiro
+
+  isSubmitting.value = true
+  try {
+    await api.put(`/objetivos/${withdrawData.value.id}`, {
+      monto_actual: newMontoActual
+    })
+    showWithdrawModal.value = false
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'success',
+      title: 'Retiro realizado exitosamente',
+      showConfirmButton: false,
+      timer: 3000,
+      background: 'var(--surface)',
+      color: 'var(--text)'
+    })
+    
+    fetchData()
+    if (refreshHeaderBalance) refreshHeaderBalance()
+  } catch (error) {
+    console.error(error)
+  } finally {
+    isSubmitting.value = false
+  }
+}
 </script>
 
 <template>
@@ -453,6 +542,7 @@ const saveDeposit = async () => {
           <button v-if="getPct(g.monto_actual, g.monto_objetivo) < 100" @click="openDeposit(g)" class="goal-btn primary">Abonar</button>
           <button v-else class="goal-btn" style="color: var(--mint-500); border-color: var(--mint-400); font-weight: 600; flex: 2; pointer-events: none;">¡Meta Completada!</button>
           
+          <button v-if="g.monto_actual > 0" @click="openWithdraw(g)" class="goal-btn" style="color: var(--red);">Retirar</button>
           <button @click="openEditGoal(g)" class="goal-btn">Editar</button>
           <button @click="deleteGoal(g.id)" class="goal-btn danger">Eliminar</button>
         </div>
@@ -547,6 +637,49 @@ const saveDeposit = async () => {
         <div class="form-actions" style="margin-top:24px;">
           <button type="button" class="btn-ghost" @click="showDepositModal = false">Cancelar</button>
           <button type="submit" class="btn-accent" style="background:var(--accent);" :disabled="isSubmitting">Añadir Fondos</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <!-- ============ MODAL: RETIRAR DINERO ============ -->
+  <div v-if="showWithdrawModal" class="modal" style="display: flex;">
+    <div class="modal-content">
+      <div class="modal-head" style="border-bottom: 1px solid var(--border); margin-bottom: 20px; padding-bottom: 15px;">
+        <div class="head-icon" style="background: rgba(239, 68, 68, 0.1); color: var(--red);">💸</div>
+        <div class="head-text">
+          <h2>Retirar Dinero</h2>
+          <p>Meta: {{ withdrawData.nombre }}</p>
+        </div>
+        <button class="modal-close" @click="showWithdrawModal = false" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+      <form @submit.prevent="saveWithdraw" autocomplete="off">
+        <div class="form-group" style="margin-bottom: 24px;">
+          <label>¿Cuánto deseas retirar?</label>
+          <div style="position: relative;">
+            <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-muted);">$</span>
+            <input type="text" 
+                   class="form-control" 
+                   v-model="displayWithdrawAmount" 
+                   @input="formatInputWithdraw" 
+                   placeholder="0.00" 
+                   style="padding-left: 32px; font-size: 1.25rem; height: 56px;" 
+                   required>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; color: var(--text-muted);">
+            <span>Disponible para retirar:</span>
+            <span style="font-weight: 600; color: var(--text);">{{ formatCurrency(withdrawData.monto_actual).replace('COP', '').trim() }}</span>
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" @click="showWithdrawModal = false">Cancelar</button>
+          <button type="submit" class="btn-save" :disabled="isSubmitting" style="background: var(--red); color: white;">
+            {{ isSubmitting ? 'Procesando...' : 'Retirar Dinero' }}
+          </button>
         </div>
       </form>
     </div>
