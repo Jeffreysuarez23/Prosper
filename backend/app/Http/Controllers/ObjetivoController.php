@@ -111,7 +111,7 @@ class ObjetivoController extends Controller
 
             if ($lockedObjetivo->monto_actual >= $lockedObjetivo->monto_objetivo) {
                 $request->user()->notificaciones()
-                    ->where('categoria', 'objetivo_vencer')
+                    ->whereIn('categoria', ['objetivo_vencer', 'objetivo_recordatorio'])
                     ->where('accion_url', 'LIKE', '%id=' . $lockedObjetivo->id . '%')
                     ->delete();
             }
