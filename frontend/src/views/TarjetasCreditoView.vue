@@ -32,31 +32,17 @@ const getCalculatedDebtInfo = (t) => {
   let baseDeuda = parseFloat(t.deuda_actual || 0)
   let penalty = 0
   let totalDeuda = baseDeuda
-  let deudaSinInteres = baseDeuda
   
   const todayDay = new Date().getDate()
   const diffPago = parseInt(t.dia_pago) - todayDay
   
   if (baseDeuda > 0 && diffPago < 0 && t.tasa_interes > 0) {
     const tasaMensual = parseFloat(t.tasa_interes) / 12 / 100
-    const d = new Date()
-    const currentMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    const hasInterestApplied = t.fecha_ultimo_interes && t.fecha_ultimo_interes.startsWith(currentMonth)
-    
-    if (hasInterestApplied) {
-      // Interest already added to DB value, reverse-calculate the original debt
-      deudaSinInteres = baseDeuda / (1 + tasaMensual)
-      penalty = baseDeuda - deudaSinInteres
-      totalDeuda = baseDeuda
-    } else {
-      // Interest not yet applied in DB, calculate it
-      deudaSinInteres = baseDeuda
-      penalty = baseDeuda * tasaMensual
-      totalDeuda = baseDeuda + penalty
-    }
+    penalty = baseDeuda * tasaMensual
+    totalDeuda = baseDeuda + penalty
   }
   
-  return { baseDeuda, totalDeuda, penalty, deudaSinInteres }
+  return { baseDeuda, totalDeuda, penalty, deudaSinInteres: baseDeuda }
 }
 
 const getStatusInfo = (t) => {
