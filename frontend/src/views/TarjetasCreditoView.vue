@@ -293,7 +293,8 @@ const openPayModal = (t) => {
     nombre: t.nombre,
     deuda_actual: debtInfo.totalDeuda
   }
-  displayPayMonto.value = ''
+  displayPayMonto.value = formatCurrency(debtInfo.totalDeuda).replace('COP', '').trim()
+  payData.value.monto = debtInfo.totalDeuda
   showPayModal.value = true
 }
 
@@ -481,7 +482,7 @@ const saveDebt = async () => {
             </div>
             
             <div v-if="getCalculatedDebtInfo(t).penalty > 0" class="cc-info-item" style="text-align:center;">
-              <span class="cc-info-label" style="color: var(--amber-500);">⚠️ Interés incluido</span>
+              <span class="cc-info-label" style="color: var(--amber-500);">⚠️ (De este total, el interés es)</span>
               <span class="cc-info-value-sm" style="color: var(--amber-500);">{{ formatCurrency(getCalculatedDebtInfo(t).penalty).replace('COP', '').trim() }}</span>
             </div>
 
@@ -641,7 +642,7 @@ const saveDebt = async () => {
             <input type="text" class="form-control" v-model="displayPayMonto" @input="formatPayInput" required placeholder="0.00">
           </div>
           <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; color: var(--text-muted);">
-            <span>Deuda Total (incluye intereses):</span>
+            <span>Total a Pagar (Ya incluye todo):</span>
             <span style="font-weight: 600; color: var(--text);">{{ formatCurrency(payData.deuda_actual).replace('COP', '').trim() }}</span>
           </div>
         </div>
