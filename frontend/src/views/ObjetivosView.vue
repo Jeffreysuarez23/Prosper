@@ -542,7 +542,7 @@ const saveWithdraw = async () => {
           <button v-if="getPct(g.monto_actual, g.monto_objetivo) < 100" @click="openDeposit(g)" class="goal-btn primary">Abonar</button>
           <button v-else class="goal-btn" style="color: var(--mint-500); border-color: var(--mint-400); font-weight: 600; flex: 2; pointer-events: none;">¡Meta Completada!</button>
           
-          <button v-if="g.monto_actual > 0" @click="openWithdraw(g)" class="goal-btn" style="color: var(--red);">Retirar</button>
+          <button v-if="g.monto_actual > 0" @click="openWithdraw(g)" class="goal-btn danger" style="background: transparent; color: var(--red); border: 1px solid var(--red);">Retirar</button>
           <button @click="openEditGoal(g)" class="goal-btn">Editar</button>
           <button @click="deleteGoal(g.id)" class="goal-btn danger">Eliminar</button>
         </div>
@@ -643,30 +643,28 @@ const saveWithdraw = async () => {
   </div>
   <!-- ============ MODAL: RETIRAR DINERO ============ -->
   <div v-if="showWithdrawModal" class="modal" style="display: flex;">
-    <div class="modal-content">
-      <div class="modal-head" style="border-bottom: 1px solid var(--border); margin-bottom: 20px; padding-bottom: 15px;">
-        <div class="head-icon" style="background: rgba(239, 68, 68, 0.1); color: var(--red);">💸</div>
-        <div class="head-text">
+    <div class="modal-content" style="max-width:400px; text-align:center; padding-top:32px;">
+      <div class="modal-head premium-head" style="margin-bottom:16px;">
+        <div class="head-icon">💸</div>
+        <div class="head-text" style="text-align:left;">
           <h2>Retirar Dinero</h2>
           <p>Meta: {{ withdrawData.nombre }}</p>
         </div>
-        <button class="modal-close" @click="showWithdrawModal = false" aria-label="Cerrar">
+        <button class="modal-close" @click="showWithdrawModal = false" type="button" aria-label="Cerrar">
           <svg viewBox="0 0 24 24" width="20" height="20">
             <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
           </svg>
         </button>
       </div>
       <form @submit.prevent="saveWithdraw" autocomplete="off">
-        <div class="form-group" style="margin-bottom: 24px;">
+        <div class="form-group" style="text-align:left;">
           <label>¿Cuánto deseas retirar?</label>
           <div style="position: relative;">
-            <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-muted);">$</span>
             <input type="text" 
                    class="form-control" 
                    v-model="displayWithdrawAmount" 
                    @input="formatInputWithdraw" 
                    placeholder="0.00" 
-                   style="padding-left: 32px; font-size: 1.25rem; height: 56px;" 
                    required>
           </div>
           <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; color: var(--text-muted);">
@@ -675,9 +673,9 @@ const saveWithdraw = async () => {
           </div>
         </div>
         
-        <div class="modal-actions">
-          <button type="button" class="btn-cancel" @click="showWithdrawModal = false">Cancelar</button>
-          <button type="submit" class="btn-save" :disabled="isSubmitting" style="background: var(--red); color: white;">
+        <div class="form-actions" style="margin-top:24px;">
+          <button type="button" class="btn-ghost" @click="showWithdrawModal = false">Cancelar</button>
+          <button type="submit" class="btn-accent" style="background:var(--red);" :disabled="isSubmitting">
             {{ isSubmitting ? 'Procesando...' : 'Retirar Dinero' }}
           </button>
         </div>
