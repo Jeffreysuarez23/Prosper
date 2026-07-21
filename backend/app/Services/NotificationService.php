@@ -12,6 +12,7 @@ class NotificationService
         $this->checkGastosFijos($user);
         $this->checkObjetivosLogrados($user);
         $this->checkObjetivosPorVencer($user);
+        $this->checkObjetivosRecordatorios($user);
     }
 
     private function checkGastosFijos(User $user)
@@ -170,6 +171,57 @@ class NotificationService
                         'mensaje' => $mensaje,
                         'categoria' => 'objetivo_vencer',
                         'accion_texto' => 'Ver Objetivo',
+                        'accion_url' => "/objetivos?id={$obj->id}"
+                    ]);
+                }
+            }
+        }
+    }
+
+    private function checkObjetivosRecordatorios(User $user)
+    {
+        $hoy = Carbon::today();
+        $mes_actual = $hoy->month;
+        $anio_actual = $hoy->year;
+        $dias_del_mes = $hoy->daysInMonth;
+
+        $objetivos = $user->objetivos()
+            ->whereRaw('monto_actual < monto_objetivo')
+            ->whereNotNull('dia_recordatorio')
+            ->get();
+
+        foreach ($objetivos as $obj) {
+            $dia_rec = $obj->dia_recordatorio;
+            if ($dia_rec > $dias_del_mes) {
+                $dia_rec = $dias_del_mes;
+            }
+
+            // Target date for payment this month
+            $fecha_pago = Carbon::createFromDate($anio_actual, $mes_actual, $dia_rec)->startOfDay();
+            
+            // Calculate difference
+            $dias_diferencia = (int) $hoy->diffInDays($fecha_pago, false);
+            
+            // Si falta exactamente 1 día
+            if ($dias_diferencia == 1) {
+                $titulo = "Recordatorio de pago: {$obj->nombre}";
+                $mensaje = "Recordatorio de pago a el siguiente objetivo. Recuerda cada {$obj->dia_recordatorio} del mes tienes que pagar para {$obj->icono} {$obj->nombre}.";
+                
+                // Avoid duplicating notification if it already ran today
+                $exists = $user->notificaciones()
+                    ->where('categoria', 'objetivo_recordatorio')
+                    ->where('accion_url', 'LIKE', "%id={$obj->id}%")
+                    ->whereDate('created_at', Carbon::today())
+                    ->exists();
+
+                if (!$exists) {
+                    $user->notificaciones()->create([
+                        'tipo' => 'info',
+                        'icono' => '📅',
+                        'titulo' => $titulo,
+                        'mensaje' => $mensaje,
+                        'categoria' => 'objetivo_recordatorio',
+                        'accion_texto' => 'Abonar ahora',
                         'accion_url' => "/objetivos?id={$obj->id}"
                     ]);
                 }
