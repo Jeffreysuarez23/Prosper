@@ -1,12 +1,23 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '../services/api'
+
+const router = useRouter()
 
 const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
 const userPlan = computed(() => user.value.membresia?.plan || 'gratis')
 
 const openMembershipModal = () => {
   window.dispatchEvent(new CustomEvent('open-membership-modal'))
+}
+
+const navigateToStats = () => {
+  if (userPlan.value !== 'gratis') {
+    router.push('/estadisticas')
+  } else {
+    openMembershipModal()
+  }
 }
 
 const dashboardData = ref(null)
@@ -138,7 +149,7 @@ const chartOptions = {
     </div>
 
     <div class="grid grid-2">
-      <article class="card card-chart">
+      <article class="card card-chart" @click="navigateToStats" style="cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'" title="Ver estadísticas detalladas">
         <div class="card-head" style="display: flex; justify-content: space-between; align-items: center;">
           <h2 style="margin: 0;">Ingresos vs Gastos {{ currentYear }}</h2>
           <span v-if="userPlan === 'gratis'" style="font-size: 0.7rem; font-weight: bold; padding: 2px 8px; border-radius: 12px; background: rgba(255,255,255,0.1); color: var(--text-muted); letter-spacing: 0.5px;">PRO</span>
