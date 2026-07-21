@@ -605,8 +605,7 @@ const deleteExpense = async (id) => {
         <div class="form-group" style="text-align:left;">
           <label>Monto a abonar</label>
           <div style="position: relative;">
-            <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-muted);">$</span>
-            <input type="text" class="form-control" v-model="displayDepositAbono" @input="formatInputDeposit" required placeholder="0.00" style="padding-left: 32px; font-size: 1.25rem; height: 56px;">
+            <input type="text" class="form-control" v-model="displayDepositAbono" @input="formatInputDeposit" required placeholder="0.00">
           </div>
           <div style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 0.85rem; color: var(--text-muted);">
             <span>Falta para completar:</span>
@@ -642,8 +641,7 @@ const deleteExpense = async (id) => {
         <div class="form-group" style="text-align:left;">
           <label>¿Cuánto deseas retirar?</label>
           <div style="position: relative;">
-            <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-muted);">$</span>
-            <input type="text" class="form-control" v-model="displayWithdrawAmount" @input="formatInputWithdraw" required placeholder="0.00" style="padding-left: 32px; font-size: 1.25rem; height: 56px;">
+            <input type="text" class="form-control" v-model="displayWithdrawAmount" @input="formatInputWithdraw" required placeholder="0.00">
           </div>
           <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; color: var(--text-muted);">
             <span>Disponible para retirar:</span>
