@@ -828,10 +828,14 @@ const formatDateTime = (dateStr) => {
   position: relative;
 }
 
+.goal-card .goal-pct {
+  right: 46px;
+}
+
 .goal-history-btn {
   position: absolute;
-  top: 12px;
-  right: 44px;
+  top: 14px;
+  right: 12px;
   background: none;
   border: none;
   color: var(--text-muted);
@@ -849,6 +853,16 @@ const formatDateTime = (dateStr) => {
   opacity: 1;
   background: var(--surface-2);
   color: var(--accent);
+}
+
+@media (max-width: 600px) {
+  .goal-history-btn {
+    top: 10px;
+    right: 10px;
+  }
+  .goal-card .goal-pct {
+    right: 40px;
+  }
 }
 
 .goal-btn.danger {
