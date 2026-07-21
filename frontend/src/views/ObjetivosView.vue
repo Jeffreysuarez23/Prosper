@@ -462,6 +462,38 @@ const saveWithdraw = async () => {
     isSubmitting.value = false
   }
 }
+
+// -----------------------------
+// HISTORIAL MODAL LOGIC
+// -----------------------------
+const showHistorialModal = ref(false)
+const historialData = ref([])
+const historialLoading = ref(false)
+const historialGoalName = ref('')
+
+const openHistorial = async (g) => {
+  historialGoalName.value = g.nombre
+  historialData.value = []
+  historialLoading.value = true
+  showHistorialModal.value = true
+  try {
+    const res = await api.get(`/objetivos/${g.id}/historial`)
+    historialData.value = res.data
+  } catch (error) {
+    console.error('Error cargando historial', error)
+  } finally {
+    historialLoading.value = false
+  }
+}
+
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+  const hours = d.getHours().toString().padStart(2, '0')
+  const mins = d.getMinutes().toString().padStart(2, '0')
+  return `${d.getDate().toString().padStart(2, '0')} ${monthNames[d.getMonth()]} ${d.getFullYear()} — ${hours}:${mins}`
+}
 </script>
 
 <template>
@@ -513,6 +545,15 @@ const saveWithdraw = async () => {
     <div v-if="data.length > 0" class="goals-grid" id="goalsGrid">
       <div v-for="g in data" :key="g.id" :class="['goal-card', getPct(g.monto_actual, g.monto_objetivo) >= 100 ? 'goal-completed' : '']" :style="getPct(g.monto_actual, g.monto_objetivo) >= 100 ? 'border-color: var(--mint-400); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);' : ''">
         <div class="goal-pct" :style="getPct(g.monto_actual, g.monto_objetivo) >= 100 ? 'background: var(--mint-400); color: white;' : ''">{{ getPct(g.monto_actual, g.monto_objetivo) }}%</div>
+        
+        <!-- Botón de historial (tres punticos) -->
+        <button class="goal-history-btn" @click="openHistorial(g)" title="Ver historial">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <circle cx="12" cy="5" r="2" />
+            <circle cx="12" cy="12" r="2" />
+            <circle cx="12" cy="19" r="2" />
+          </svg>
+        </button>
         
         <div class="goal-card-top">
           <div class="goal-emoji" :style="getPct(g.monto_actual, g.monto_objetivo) >= 100 ? 'background: var(--mint-400); color: white; border-color: var(--mint-500);' : ''">{{ g.icono || '🎯' }}</div>
@@ -693,9 +734,88 @@ const saveWithdraw = async () => {
       </form>
     </div>
   </div>
+
+  <!-- ============ MODAL: HISTORIAL ============ -->
+  <div v-if="showHistorialModal" class="modal" style="display: flex;">
+    <div class="modal-content" style="max-width:480px; padding-top:32px;">
+      <div class="modal-head premium-head" style="margin-bottom:16px;">
+        <div class="head-icon">📋</div>
+        <div class="head-text" style="text-align:left;">
+          <h2>Historial</h2>
+          <p>{{ historialGoalName }}</p>
+        </div>
+        <button class="modal-close" @click="showHistorialModal = false" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+
+      <div v-if="historialLoading" style="text-align:center; padding: 32px 0; color: var(--text-muted);">
+        Cargando historial...
+      </div>
+
+      <div v-else-if="historialData.length === 0" style="text-align:center; padding: 32px 0;">
+        <div style="font-size: 2.5rem; margin-bottom: 12px;">📭</div>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">No hay movimientos registrados aún.</p>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px;">Los abonos y retiros que realices aparecerán aquí.</p>
+      </div>
+
+      <div v-else class="historial-list">
+        <div v-for="h in historialData" :key="h.id" class="historial-item">
+          <div class="historial-icon" :class="h.tipo === 'abono' ? 'hi-abono' : 'hi-retiro'">
+            <svg v-if="h.tipo === 'abono'" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            <svg v-else viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M5 12h14" />
+            </svg>
+          </div>
+          <div class="historial-info">
+            <span class="historial-tipo">{{ h.tipo === 'abono' ? 'Abono' : 'Retiro' }}</span>
+            <span class="historial-fecha">{{ formatDateTime(h.created_at) }}</span>
+          </div>
+          <span class="historial-monto" :class="h.tipo === 'abono' ? 'hm-abono' : 'hm-retiro'">
+            {{ h.tipo === 'abono' ? '+' : '-' }} {{ formatCurrency(h.monto).replace('COP', '').trim() }}
+          </span>
+        </div>
+      </div>
+
+      <div class="form-actions" style="margin-top:20px;">
+        <button type="button" class="btn-ghost" @click="showHistorialModal = false" style="flex:1;">Cerrar</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
+.goal-card {
+  position: relative;
+}
+
+.goal-history-btn {
+  position: absolute;
+  top: 12px;
+  right: 44px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.goal-history-btn:hover {
+  opacity: 1;
+  background: var(--surface-2);
+  color: var(--accent);
+}
+
 .goal-btn.danger {
   color: var(--red);
   border-color: var(--red);
@@ -705,5 +825,80 @@ const saveWithdraw = async () => {
 .goal-btn.danger:hover {
   background: var(--red);
   color: white;
+}
+
+/* ── Historial List ── */
+.historial-list {
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.historial-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 8px;
+  border-radius: 10px;
+  transition: background 0.15s;
+}
+
+.historial-item:hover {
+  background: var(--surface-2);
+}
+
+.historial-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hi-abono {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.hi-retiro {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.historial-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.historial-tipo {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.historial-fecha {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.historial-monto {
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.hm-abono {
+  color: #22c55e;
+}
+
+.hm-retiro {
+  color: #ef4444;
 }
 </style>

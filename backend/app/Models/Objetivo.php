@@ -20,4 +20,9 @@ class Objetivo extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function historial()
+    {
+        return $this->hasMany(HistorialObjetivo::class);
+    }
 }
