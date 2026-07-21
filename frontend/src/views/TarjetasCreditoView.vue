@@ -476,12 +476,12 @@ const saveDebt = async () => {
         <div class="cc-info">
           <div class="cc-info-row">
             <div class="cc-info-item">
-              <span class="cc-info-label">Deuda Actual</span>
+              <span class="cc-info-label">Deuda Total</span>
               <span class="cc-info-value" style="color: var(--red);">{{ formatCurrency(getCalculatedDebtInfo(t).totalDeuda).replace('COP', '').trim() }}</span>
             </div>
             
             <div v-if="getCalculatedDebtInfo(t).penalty > 0" class="cc-info-item" style="text-align:center;">
-              <span class="cc-info-label" style="color: var(--amber-500);">⚠️ Intereses</span>
+              <span class="cc-info-label" style="color: var(--amber-500);">⚠️ Interés incluido</span>
               <span class="cc-info-value-sm" style="color: var(--amber-500);">{{ formatCurrency(getCalculatedDebtInfo(t).penalty).replace('COP', '').trim() }}</span>
             </div>
 
@@ -641,7 +641,7 @@ const saveDebt = async () => {
             <input type="text" class="form-control" v-model="displayPayMonto" @input="formatPayInput" required placeholder="0.00">
           </div>
           <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; color: var(--text-muted);">
-            <span>Deuda:</span>
+            <span>Deuda Total (incluye intereses):</span>
             <span style="font-weight: 600; color: var(--text);">{{ formatCurrency(payData.deuda_actual).replace('COP', '').trim() }}</span>
           </div>
         </div>
