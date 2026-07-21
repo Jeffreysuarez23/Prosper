@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Objetivo;
+use App\Models\HistorialObjetivo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -106,6 +107,15 @@ class ObjetivoController extends Controller
                         'descripcion' => $desc,
                         'metodo_pago' => 'efectivo',
                     ]);
+
+                    // Registrar en historial de objetivos
+                    HistorialObjetivo::create([
+                        'objetivo_id' => $lockedObjetivo->id,
+                        'user_id' => $request->user()->id,
+                        'tipo' => $diff > 0 ? 'abono' : 'retiro',
+                        'monto' => abs($diff),
+                        'fecha' => now()->toDateString(),
+                    ]);
                 }
             }
 
@@ -152,5 +162,18 @@ class ObjetivoController extends Controller
         });
         
         return response()->json(null, 204);
+    }
+
+    public function historial(Objetivo $objetivo)
+    {
+        if ($objetivo->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $historial = $objetivo->historial()
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($historial);
     }
 }
