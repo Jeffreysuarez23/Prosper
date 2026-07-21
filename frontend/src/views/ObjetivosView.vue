@@ -470,10 +470,27 @@ const showHistorialModal = ref(false)
 const historialData = ref([])
 const historialLoading = ref(false)
 const historialGoalName = ref('')
+const historialCurrentPage = ref(1)
+const historialPerPage = 5
+
+const historialTotalPages = computed(() => {
+  return Math.ceil(historialData.value.length / historialPerPage) || 1
+})
+
+const historialPaginatedData = computed(() => {
+  const start = (historialCurrentPage.value - 1) * historialPerPage
+  return historialData.value.slice(start, start + historialPerPage)
+})
+
+const setHistorialPage = (p) => {
+  if (p < 1 || p > historialTotalPages.value) return
+  historialCurrentPage.value = p
+}
 
 const openHistorial = async (g) => {
   historialGoalName.value = g.nombre
   historialData.value = []
+  historialCurrentPage.value = 1
   historialLoading.value = true
   showHistorialModal.value = true
   try {
@@ -762,7 +779,7 @@ const formatDateTime = (dateStr) => {
       </div>
 
       <div v-else class="historial-list">
-        <div v-for="h in historialData" :key="h.id" class="historial-item">
+        <div v-for="h in historialPaginatedData" :key="h.id" class="historial-item">
           <div class="historial-icon" :class="h.tipo === 'abono' ? 'hi-abono' : 'hi-retiro'">
             <svg v-if="h.tipo === 'abono'" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
               <path d="M12 5v14M5 12h14" />
@@ -779,6 +796,24 @@ const formatDateTime = (dateStr) => {
             {{ h.tipo === 'abono' ? '+' : '-' }} {{ formatCurrency(h.monto).replace('COP', '').trim() }}
           </span>
         </div>
+      </div>
+
+      <!-- Paginación -->
+      <div v-if="historialTotalPages > 1" class="pagination" style="display:flex; justify-content:center; gap:8px; margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
+        <button class="btn-ghost btn-sm" :disabled="historialCurrentPage === 1" @click="setHistorialPage(historialCurrentPage - 1)">Anterior</button>
+        
+        <div style="display:flex; align-items:center; gap:4px;">
+          <button 
+            v-for="p in historialTotalPages" :key="p"
+            @click="setHistorialPage(p)"
+            :class="['btn-sm', historialCurrentPage === p ? 'btn-accent' : 'btn-ghost']"
+            style="min-width:32px; height:32px; padding:0; border-radius:6px; display:flex; align-items:center; justify-content:center;"
+          >
+            {{ p }}
+          </button>
+        </div>
+        
+        <button class="btn-ghost btn-sm" :disabled="historialCurrentPage === historialTotalPages" @click="setHistorialPage(historialCurrentPage + 1)">Siguiente</button>
       </div>
 
       <div class="form-actions" style="margin-top:20px;">
