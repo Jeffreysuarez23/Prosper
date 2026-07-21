@@ -542,7 +542,7 @@ const saveWithdraw = async () => {
           <button v-if="getPct(g.monto_actual, g.monto_objetivo) < 100" @click="openDeposit(g)" class="goal-btn primary">Abonar</button>
           <button v-else class="goal-btn" style="color: var(--mint-500); border-color: var(--mint-400); font-weight: 600; flex: 2; pointer-events: none;">¡Meta Completada!</button>
           
-          <button v-if="g.monto_actual > 0" @click="openWithdraw(g)" class="goal-btn danger" style="background: transparent; color: var(--red); border: 1px solid var(--red);">Retirar</button>
+          <button v-if="g.monto_actual > 0" @click="openWithdraw(g)" class="goal-btn danger">Retirar</button>
           <button @click="openEditGoal(g)" class="goal-btn">Editar</button>
           <button @click="deleteGoal(g.id)" class="goal-btn danger">Eliminar</button>
         </div>
@@ -683,3 +683,16 @@ const saveWithdraw = async () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.goal-btn.danger {
+  color: var(--red);
+  border-color: var(--red);
+  transition: all 0.2s;
+}
+
+.goal-btn.danger:hover {
+  background: var(--red);
+  color: white;
+}
+</style>
