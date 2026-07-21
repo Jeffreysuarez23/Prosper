@@ -370,7 +370,6 @@ const saveDeposit = async () => {
   } catch (error) {
     console.error(error)
   } finally {
-  } finally {
     isSubmitting.value = false
   }
 }
