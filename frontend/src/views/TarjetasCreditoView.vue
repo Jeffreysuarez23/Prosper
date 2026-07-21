@@ -625,7 +625,7 @@ const saveDebt = async () => {
         <div class="head-text" style="text-align:left;">
           <h2>Pagar Tarjeta</h2>
           <p>
-            {{ payData.nombre }} — Deuda: {{ formatCurrency(payData.deuda_actual).replace('COP', '').trim() }}
+            {{ payData.nombre }}
           </p>
         </div>
         <button class="modal-close" @click="showPayModal = false" aria-label="Cerrar">
@@ -637,8 +637,13 @@ const saveDebt = async () => {
       <form @submit.prevent="savePay" autocomplete="off">
         <div class="form-group" style="text-align:left;">
           <label>Monto a pagar</label>
-          <input type="text" class="form-control" :value="displayPayMonto" @input="formatPayInput" required
-            placeholder="0">
+          <div style="position: relative;">
+            <input type="text" class="form-control" v-model="displayPayMonto" @input="formatPayInput" required placeholder="0.00">
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; color: var(--text-muted);">
+            <span>Deuda:</span>
+            <span style="font-weight: 600; color: var(--text);">{{ formatCurrency(payData.deuda_actual).replace('COP', '').trim() }}</span>
+          </div>
         </div>
         <div class="form-actions" style="margin-top:24px;">
           <button type="button" class="btn-ghost" @click="showPayModal = false">Cancelar</button>
@@ -656,8 +661,7 @@ const saveDebt = async () => {
         <div class="head-text" style="text-align:left;">
           <h2>Registrar Compra</h2>
           <p>
-            {{ debtData.nombre }} — Cupo: {{ formatCurrency(debtData.limite_credito -
-              debtData.deuda_actual).replace('COP', '').trim() }}
+            {{ debtData.nombre }}
           </p>
         </div>
         <button class="modal-close" @click="showDebtModal = false" aria-label="Cerrar">
@@ -669,8 +673,13 @@ const saveDebt = async () => {
       <form @submit.prevent="saveDebt" autocomplete="off">
         <div class="form-group" style="text-align:left;">
           <label>Monto de la compra</label>
-          <input type="text" class="form-control" :value="displayDebtMonto" @input="formatDebtInput" required
-            placeholder="0">
+          <div style="position: relative;">
+            <input type="text" class="form-control" v-model="displayDebtMonto" @input="formatDebtInput" required placeholder="0.00">
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; color: var(--text-muted);">
+            <span>Cupo:</span>
+            <span style="font-weight: 600; color: var(--text);">{{ formatCurrency(debtData.limite_credito - debtData.deuda_actual).replace('COP', '').trim() }}</span>
+          </div>
         </div>
         <div class="form-actions" style="margin-top:24px;">
           <button type="button" class="btn-ghost" @click="showDebtModal = false">Cancelar</button>
