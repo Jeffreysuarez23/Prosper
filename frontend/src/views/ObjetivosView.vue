@@ -89,7 +89,8 @@ const openNewGoal = () => {
     monto_objetivo: '',
     monto_actual: '',
     fecha_limite: new Date().toISOString().split('T')[0],
-    icono: '🎯'
+    icono: '🎯',
+    dia_recordatorio: ''
   }
   displayGoalTarget.value = ''
   displayGoalSaved.value = ''
@@ -103,7 +104,8 @@ const openEditGoal = (g) => {
     monto_objetivo: Math.round(g.monto_objetivo),
     monto_actual: Math.round(g.monto_actual),
     fecha_limite: g.fecha_limite.split('T')[0],
-    icono: g.icono || '🎯'
+    icono: g.icono || '🎯',
+    dia_recordatorio: g.dia_recordatorio || ''
   }
   displayGoalTarget.value = new Intl.NumberFormat('es-CO').format(goalData.value.monto_objetivo)
   displayGoalSaved.value = new Intl.NumberFormat('es-CO').format(goalData.value.monto_actual)
@@ -493,9 +495,15 @@ const saveDeposit = async () => {
             <input type="text" class="form-control" v-model="displayGoalSaved" @input="formatGoalSaved" placeholder="0.00">
           </div>
         </div>
-        <div class="form-group">
-          <label>Fecha Límite</label>
-          <input type="date" v-model="goalData.fecha_limite" required>
+        <div class="form-row">
+          <div class="form-group form-half">
+            <label>Fecha Límite</label>
+            <input type="date" v-model="goalData.fecha_limite" required>
+          </div>
+          <div class="form-group form-half">
+            <label>Día de pago (Recordatorio)</label>
+            <input type="number" min="1" max="31" v-model="goalData.dia_recordatorio" placeholder="Ej: 15 (Opcional)">
+          </div>
         </div>
         <div class="form-group">
           <label>Icono del Objetivo</label>

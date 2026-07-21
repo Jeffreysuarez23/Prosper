@@ -12,7 +12,8 @@ class Objetivo extends Model
         'monto_objetivo',
         'monto_actual',
         'fecha_limite',
-        'icono'
+        'icono',
+        'dia_recordatorio'
     ];
 
     public function user()

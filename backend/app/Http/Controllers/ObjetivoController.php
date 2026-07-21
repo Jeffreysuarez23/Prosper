@@ -35,6 +35,7 @@ class ObjetivoController extends Controller
             'monto_actual' => 'numeric|min:0',
             'fecha_limite' => 'required|date',
             'icono' => 'nullable|string|max:10',
+            'dia_recordatorio' => 'nullable|integer|min:1|max:31',
         ]);
 
         $user = $request->user();
@@ -82,6 +83,7 @@ class ObjetivoController extends Controller
             'monto_actual' => 'numeric|min:0',
             'fecha_limite' => 'sometimes|required|date',
             'icono' => 'nullable|string|max:10',
+            'dia_recordatorio' => 'nullable|integer|min:1|max:31',
         ]);
 
         $objetivo = DB::transaction(function () use ($request, $objetivo, $validated) {
