@@ -38,20 +38,11 @@ const getCalculatedDebtInfo = (t) => {
   
   if (baseDeuda > 0 && diffPago < 0 && t.tasa_interes > 0) {
     const tasaMensual = parseFloat(t.tasa_interes) / 12 / 100
-    const d = new Date()
-    const currentMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    const hasInterestApplied = t.fecha_ultimo_interes && t.fecha_ultimo_interes.startsWith(currentMonth)
-    
-    if (hasInterestApplied) {
-      penalty = baseDeuda - (baseDeuda / (1 + tasaMensual))
-      totalDeuda = baseDeuda // already includes penalty in DB
-    } else {
-      penalty = baseDeuda * tasaMensual
-      totalDeuda = baseDeuda + penalty
-    }
+    penalty = baseDeuda * tasaMensual
+    totalDeuda = baseDeuda + penalty
   }
   
-  return { baseDeuda, totalDeuda, penalty }
+  return { baseDeuda, totalDeuda, penalty, deudaSinInteres: baseDeuda }
 }
 
 const getStatusInfo = (t) => {
@@ -291,7 +282,9 @@ const openPayModal = (t) => {
   payData.value = {
     id: t.id,
     nombre: t.nombre,
-    deuda_actual: debtInfo.totalDeuda
+    deuda_actual: debtInfo.totalDeuda,
+    deuda_sin_interes: debtInfo.deudaSinInteres,
+    penalty: debtInfo.penalty
   }
   displayPayMonto.value = formatCurrency(debtInfo.totalDeuda).replace('COP', '').trim()
   payData.value.monto = debtInfo.totalDeuda
@@ -477,13 +470,13 @@ const saveDebt = async () => {
         <div class="cc-info">
           <div class="cc-info-row">
             <div class="cc-info-item">
-              <span class="cc-info-label">Deuda Total</span>
-              <span class="cc-info-value" style="color: var(--red);">{{ formatCurrency(getCalculatedDebtInfo(t).totalDeuda).replace('COP', '').trim() }}</span>
+              <span class="cc-info-label">Deuda</span>
+              <span class="cc-info-value" style="color: var(--red);">{{ formatCurrency(getCalculatedDebtInfo(t).deudaSinInteres).replace('COP', '').trim() }}</span>
             </div>
             
             <div v-if="getCalculatedDebtInfo(t).penalty > 0" class="cc-info-item" style="text-align:center;">
-              <span class="cc-info-label" style="color: var(--amber-500);">⚠️ (De este total, el interés es)</span>
-              <span class="cc-info-value-sm" style="color: var(--amber-500);">{{ formatCurrency(getCalculatedDebtInfo(t).penalty).replace('COP', '').trim() }}</span>
+              <span class="cc-info-label" style="color: var(--amber-500);">⚠️ Intereses</span>
+              <span class="cc-info-value-sm" style="color: var(--amber-500);">+ {{ formatCurrency(getCalculatedDebtInfo(t).penalty).replace('COP', '').trim() }}</span>
             </div>
 
             <div class="cc-info-item" style="text-align:right;">
@@ -641,8 +634,22 @@ const saveDebt = async () => {
           <div style="position: relative;">
             <input type="text" class="form-control" v-model="displayPayMonto" @input="formatPayInput" required placeholder="0.00">
           </div>
-          <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; color: var(--text-muted);">
-            <span>Total a Pagar (Ya incluye todo):</span>
+          <div v-if="payData.penalty > 0" style="margin-top: 12px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 10px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span>Deuda:</span>
+              <span style="color: var(--text);">{{ formatCurrency(payData.deuda_sin_interes).replace('COP', '').trim() }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+              <span style="color: var(--amber-500);">+ Intereses:</span>
+              <span style="color: var(--amber-500); font-weight: 600;">{{ formatCurrency(payData.penalty).replace('COP', '').trim() }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 6px; font-weight: 700; font-size: 0.95rem;">
+              <span style="color: var(--text);">Total a Pagar:</span>
+              <span style="color: var(--red);">{{ formatCurrency(payData.deuda_actual).replace('COP', '').trim() }}</span>
+            </div>
+          </div>
+          <div v-else style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; color: var(--text-muted);">
+            <span>Deuda:</span>
             <span style="font-weight: 600; color: var(--text);">{{ formatCurrency(payData.deuda_actual).replace('COP', '').trim() }}</span>
           </div>
         </div>

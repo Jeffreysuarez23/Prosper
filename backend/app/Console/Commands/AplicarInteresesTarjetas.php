@@ -49,18 +49,15 @@ class AplicarInteresesTarjetas extends Command
                     $ultimoCobro = $tarjeta->fecha_ultimo_interes ? Carbon::parse($tarjeta->fecha_ultimo_interes) : null;
                     $cobrarInteres = (!$ultimoCobro || $ultimoCobro->format('Y-m') !== $today->format('Y-m'));
                     
-                    if ($cobrarInteres && $tarjeta->tasa_interes > 0) {
+                    if ($tarjeta->tasa_interes > 0) {
                         $tasaMensual = $tarjeta->tasa_interes / 12 / 100;
                         $interes = round($tarjeta->deuda_actual * $tasaMensual, 2);
                         
                         if ($interes > 0) {
-                            $tarjeta->update([
-                                'deuda_actual' => $tarjeta->deuda_actual + $interes,
-                                'fecha_ultimo_interes' => $today->toDateString()
-                            ]);
-                            
-                            $tituloNotif = 'Intereses aplicados: ' . $tarjeta->nombre;
-                            $mensajeNotif = 'Tu pago está atrasado. Se ha aplicado un cargo por intereses de $' . number_format($interes, 2) . '.';
+                            // Solo notificar, NO modificar deuda_actual
+                            // Los intereses se aplican al momento de pagar
+                            $tituloNotif = 'Intereses pendientes: ' . $tarjeta->nombre;
+                            $mensajeNotif = 'Tu pago está atrasado. Tienes intereses pendientes de $' . number_format($interes, 2) . ' que se sumarán al momento de pagar.';
                             $categoriaNotif = 'alerta';
                             $countIntereses++;
                         }
