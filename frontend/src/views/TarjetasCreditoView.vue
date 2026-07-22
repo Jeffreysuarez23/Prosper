@@ -274,21 +274,32 @@ const deleteCard = async (id) => {
 
 // ── Pay Modal ──
 const showPayModal = ref(false)
-const payData = ref({ id: null, nombre: '', deuda_actual: 0, monto: '' })
+const payData = ref({ id: null, nombre: '', deuda_actual: 0, monto: '', compra_id: '' })
 const displayPayMonto = ref('')
+const comprasPendientes = ref([])
 
-const openPayModal = (t) => {
+const openPayModal = async (t) => {
   const debtInfo = getCalculatedDebtInfo(t)
   payData.value = {
     id: t.id,
     nombre: t.nombre,
     deuda_actual: debtInfo.totalDeuda,
     deuda_sin_interes: debtInfo.deudaSinInteres,
-    penalty: debtInfo.penalty
+    penalty: debtInfo.penalty,
+    compra_id: ''
   }
   displayPayMonto.value = formatCurrency(debtInfo.totalDeuda).replace('COP', '').trim()
   payData.value.monto = debtInfo.totalDeuda
   showPayModal.value = true
+  
+  comprasPendientes.value = []
+  try {
+    api.get(`/tarjetas-credito/${t.id}/compras-pendientes`).then(res => {
+      comprasPendientes.value = res.data
+    })
+  } catch(e) {
+    console.error(e)
+  }
 }
 
 const formatPayInput = (e) => {
@@ -314,7 +325,11 @@ const savePay = async () => {
   }
   isSubmitting.value = true
   try {
-    await api.post(`/tarjetas-credito/${payData.value.id}/pago`, { monto })
+    const payload = { monto }
+    if (payData.value.compra_id) {
+      payload.compra_id = payData.value.compra_id
+    }
+    await api.post(`/tarjetas-credito/${payData.value.id}/pago`, payload)
     showPayModal.value = false
 
     const newDeuda = payData.value.deuda_actual - monto
@@ -337,11 +352,11 @@ const savePay = async () => {
 
 // ── Debt Modal ──
 const showDebtModal = ref(false)
-const debtData = ref({ id: null, nombre: '', deuda_actual: 0, limite_credito: 0, monto: '' })
+const debtData = ref({ id: null, nombre: '', deuda_actual: 0, limite_credito: 0, monto: '', descripcion: '' })
 const displayDebtMonto = ref('')
 
 const openDebtModal = (t) => {
-  debtData.value = { id: t.id, nombre: t.nombre, deuda_actual: parseFloat(t.deuda_actual), limite_credito: parseFloat(t.limite_credito) }
+  debtData.value = { id: t.id, nombre: t.nombre, deuda_actual: parseFloat(t.deuda_actual), limite_credito: parseFloat(t.limite_credito), monto: '', descripcion: '' }
   displayDebtMonto.value = ''
   showDebtModal.value = true
 }
@@ -370,7 +385,10 @@ const saveDebt = async () => {
   }
   isSubmitting.value = true
   try {
-    await api.post(`/tarjetas-credito/${debtData.value.id}/deuda`, { monto })
+    await api.post(`/tarjetas-credito/${debtData.value.id}/deuda`, { 
+      monto, 
+      descripcion: debtData.value.descripcion || 'Compra sin descripción' 
+    })
     showDebtModal.value = false
     Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Deuda agregada exitosamente', showConfirmButton: false, timer: 3000, background: 'var(--surface)', color: 'var(--text)' })
     fetchData()
@@ -381,6 +399,53 @@ const saveDebt = async () => {
   } finally {
     isSubmitting.value = false
   }
+}
+
+// -----------------------------
+// HISTORIAL MODAL LOGIC
+// -----------------------------
+const showHistorialModal = ref(false)
+const historialData = ref([])
+const historialLoading = ref(false)
+const historialCardName = ref('')
+const historialCurrentPage = ref(1)
+const historialPerPage = 5
+
+const historialTotalPages = computed(() => {
+  return Math.ceil(historialData.value.length / historialPerPage) || 1
+})
+
+const historialPaginatedData = computed(() => {
+  const start = (historialCurrentPage.value - 1) * historialPerPage
+  return historialData.value.slice(start, start + historialPerPage)
+})
+
+const setHistorialPage = (p) => {
+  if (p < 1 || p > historialTotalPages.value) return
+  historialCurrentPage.value = p
+}
+
+const openHistorial = async (t) => {
+  historialCardName.value = t.nombre
+  historialData.value = []
+  historialCurrentPage.value = 1
+  historialLoading.value = true
+  showHistorialModal.value = true
+  try {
+    const res = await api.get(`/tarjetas-credito/${t.id}/historial`)
+    historialData.value = res.data
+  } catch (error) {
+    console.error('Error cargando historial', error)
+  } finally {
+    historialLoading.value = false
+  }
+}
+
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) + ' — ' +
+         d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
 }
 </script>
 
@@ -441,6 +506,15 @@ const saveDebt = async () => {
         <!-- Visual Credit Card -->
         <div class="cc-visual"
           :style="{ background: `linear-gradient(135deg, ${t.color || '#3b82f6'}, ${t.color || '#3b82f6'}dd, ${t.color || '#3b82f6'}88)` }">
+          
+          <button class="goal-history-btn" @click="openHistorial(t)" title="Ver historial">
+            <svg viewBox="0 0 24 24" width="20" height="20">
+              <circle cx="12" cy="5" r="2" fill="currentColor"/>
+              <circle cx="12" cy="12" r="2" fill="currentColor"/>
+              <circle cx="12" cy="19" r="2" fill="currentColor"/>
+            </svg>
+          </button>
+          
           <div class="cc-visual-top">
             <span class="cc-chip">
               <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
@@ -630,7 +704,16 @@ const saveDebt = async () => {
       </div>
       <form @submit.prevent="savePay" autocomplete="off">
         <div class="form-group" style="text-align:left;">
-          <label>Monto a pagar</label>
+          <div v-if="comprasPendientes.length > 0" style="margin-bottom: 16px;">
+            <label>Abonar a (Opcional)</label>
+            <select v-model="payData.compra_id" class="form-control">
+              <option value="">Deuda general de la tarjeta</option>
+              <option v-for="c in comprasPendientes" :key="c.id" :value="c.id">
+                {{ c.descripcion }} - Debe: {{ formatCurrency(c.monto - c.monto_pagado).replace('COP', '').trim() }}
+              </option>
+            </select>
+          </div>
+          <label>Monto a abonar</label>
           <div style="position: relative;">
             <input type="text" class="form-control" v-model="displayPayMonto" @input="formatPayInput" required placeholder="0.00">
           </div>
@@ -680,6 +763,10 @@ const saveDebt = async () => {
       </div>
       <form @submit.prevent="saveDebt" autocomplete="off">
         <div class="form-group" style="text-align:left;">
+          <div style="margin-bottom: 16px;">
+            <label>Descripción de la compra</label>
+            <input type="text" class="form-control" v-model="debtData.descripcion" required placeholder="Ej: Zapatos Nike">
+          </div>
           <label>Monto de la compra</label>
           <div style="position: relative;">
             <input type="text" class="form-control" v-model="displayDebtMonto" @input="formatDebtInput" required placeholder="0.00">
@@ -694,6 +781,76 @@ const saveDebt = async () => {
           <button type="submit" class="btn-accent" style="background:var(--amber-500);" :disabled="isSubmitting">Registrar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ============ MODAL: HISTORIAL ============ -->
+  <div v-if="showHistorialModal" class="modal" style="display: flex;">
+    <div class="modal-content" style="max-width:480px; padding-top:32px;">
+      <div class="modal-head premium-head" style="margin-bottom:16px;">
+        <div class="head-icon" style="color:var(--text);">📋</div>
+        <div class="head-text" style="text-align:left;">
+          <h2>Historial de tarjeta</h2>
+          <p>{{ historialCardName }}</p>
+        </div>
+        <button class="modal-close" @click="showHistorialModal = false" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+
+      <div v-if="historialLoading" style="text-align:center; padding: 32px 0; color: var(--text-muted);">
+        Cargando historial...
+      </div>
+
+      <div v-else-if="historialData.length === 0" style="text-align:center; padding: 32px 0;">
+        <div style="font-size: 2.5rem; margin-bottom: 12px;">📭</div>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">No hay movimientos registrados aún.</p>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px;">Las compras y abonos aparecerán aquí.</p>
+      </div>
+
+      <div v-else class="historial-list">
+        <div v-for="h in historialPaginatedData" :key="h.id" class="historial-item">
+          <div class="historial-icon" :class="h.tipo === 'abono' ? 'hi-abono' : 'hi-retiro'">
+            <svg v-if="h.tipo === 'abono'" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            <svg v-else viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M5 12h14" />
+            </svg>
+          </div>
+          <div class="historial-info">
+            <span class="historial-tipo">{{ h.descripcion }}</span>
+            <span class="historial-fecha">{{ formatDateTime(h.created_at) }}</span>
+          </div>
+          <span class="historial-monto" :class="h.tipo === 'abono' ? 'hm-abono' : 'hm-retiro'">
+            {{ h.tipo === 'abono' ? '+' : '-' }} {{ formatCurrency(h.monto).replace('COP', '').trim() }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Paginación -->
+      <div v-if="historialTotalPages > 1" class="pagination" style="display:flex; justify-content:center; gap:8px; margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
+        <button class="btn-ghost btn-sm" :disabled="historialCurrentPage === 1" @click="setHistorialPage(historialCurrentPage - 1)">Anterior</button>
+        
+        <div style="display:flex; align-items:center; gap:4px;">
+          <button 
+            v-for="p in historialTotalPages" :key="p"
+            @click="setHistorialPage(p)"
+            :class="['btn-sm', historialCurrentPage === p ? 'btn-accent' : 'btn-ghost']"
+            style="min-width:32px; height:32px; padding:0; border-radius:6px; display:flex; align-items:center; justify-content:center;"
+          >
+            {{ p }}
+          </button>
+        </div>
+        
+        <button class="btn-ghost btn-sm" :disabled="historialCurrentPage === historialTotalPages" @click="setHistorialPage(historialCurrentPage + 1)">Siguiente</button>
+      </div>
+
+      <div class="form-actions" style="margin-top:20px;">
+        <button type="button" class="btn-ghost" @click="showHistorialModal = false" style="flex:1;">Cerrar</button>
+      </div>
     </div>
   </div>
 </template>
@@ -785,6 +942,105 @@ const saveDebt = async () => {
 .cc-status-pill.status-info {
   background: rgba(59, 130, 246, .25);
   color: #93c5fd;
+}
+
+.goal-history-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.goal-history-btn:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* ── Historial List ── */
+.historial-list {
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.historial-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 8px;
+  border-radius: 10px;
+  transition: background 0.15s;
+}
+
+.historial-item:hover {
+  background: var(--surface-2);
+}
+
+.historial-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hi-abono {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.hi-retiro {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.historial-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.historial-tipo {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.historial-fecha {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.historial-monto {
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.hm-abono {
+  color: #22c55e;
+}
+
+.hm-retiro {
+  color: #ef4444;
 }
 
 .cc-digits {

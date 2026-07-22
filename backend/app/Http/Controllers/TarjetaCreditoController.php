@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\TarjetaCredito;
+use App\Models\CompraTarjeta;
+use App\Models\HistorialTarjetaCredito;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -133,10 +135,23 @@ class TarjetaCreditoController extends Controller
         if ($tarjetaCredito->user_id !== $request->user()->id) abort(403);
 
         $validated = $request->validate([
-            'monto' => 'required|numeric|min:0.01'
+            'monto' => 'required|numeric|min:0.01',
+            'compra_id' => 'nullable|exists:compra_tarjeta_creditos,id'
         ]);
 
         $monto = $validated['monto'];
+        $compra_id = $validated['compra_id'] ?? null;
+
+        if ($compra_id) {
+            $compra = CompraTarjeta::where('id', $compra_id)
+                ->where('tarjeta_credito_id', $tarjetaCredito->id)
+                ->where('user_id', $request->user()->id)
+                ->firstOrFail();
+                
+            if ($compra->estado === 'pagado') {
+                return response()->json(['message' => 'Esta compra ya está pagada completamente.'], 400);
+            }
+        }
 
         // --- CALCULAR INTERÉS PENDIENTE ANTES DE PAGAR ---
         $today = now();
@@ -160,6 +175,24 @@ class TarjetaCreditoController extends Controller
                 'deuda_actual' => $lockedTarjeta->deuda_actual - $monto
             ]);
 
+            // Actualizar la compra específica si se seleccionó
+            $descripcionAbono = "Abono general a tarjeta";
+            
+            if (isset($compra)) {
+                // Bloquear la fila de la compra para evitar race conditions
+                $lockedCompra = CompraTarjeta::where('id', $compra->id)->lockForUpdate()->first();
+                
+                $nuevoPagado = $lockedCompra->monto_pagado + $monto;
+                if ($nuevoPagado >= $lockedCompra->monto) {
+                    $nuevoPagado = $lockedCompra->monto;
+                    $lockedCompra->update(['estado' => 'pagado', 'monto_pagado' => $nuevoPagado]);
+                } else {
+                    $lockedCompra->update(['monto_pagado' => $nuevoPagado]);
+                }
+                
+                $descripcionAbono = "Abono a compra: " . $lockedCompra->descripcion;
+            }
+
             // Registrar movimiento de gasto (sale dinero del balance)
             $request->user()->movimientos()->create([
                 'tipo' => 'gasto',
@@ -168,6 +201,16 @@ class TarjetaCreditoController extends Controller
                 'categoria' => 'Servicios',
                 'descripcion' => "Pago a tarjeta: " . $lockedTarjeta->nombre,
                 'metodo_pago' => 'transferencia',
+            ]);
+            
+            HistorialTarjetaCredito::create([
+                'tarjeta_credito_id' => $lockedTarjeta->id,
+                'user_id' => $request->user()->id,
+                'compra_tarjeta_id' => $compra_id ?? null,
+                'tipo' => 'abono',
+                'monto' => $monto,
+                'descripcion' => $descripcionAbono,
+                'fecha' => now()->toDateString(),
             ]);
             
             return $lockedTarjeta;
@@ -184,11 +227,14 @@ class TarjetaCreditoController extends Controller
         if ($tarjetaCredito->user_id !== $request->user()->id) abort(403);
 
         $validated = $request->validate([
-            'monto' => 'required|numeric|min:0.01'
+            'monto' => 'required|numeric|min:0.01',
+            'descripcion' => 'required|string|max:255'
         ]);
 
         $monto = $validated['monto'];
-        $tarjetaCredito = \Illuminate\Support\Facades\DB::transaction(function () use ($tarjetaCredito, $monto) {
+        $descripcion = $validated['descripcion'];
+
+        $tarjetaCredito = \Illuminate\Support\Facades\DB::transaction(function () use ($tarjetaCredito, $monto, $descripcion, $request) {
             $lockedTarjeta = TarjetaCredito::where('id', $tarjetaCredito->id)->lockForUpdate()->first();
             $nuevaDeuda = $lockedTarjeta->deuda_actual + $monto;
             
@@ -200,6 +246,24 @@ class TarjetaCreditoController extends Controller
                 'deuda_actual' => $nuevaDeuda
             ]);
             
+            $compra = CompraTarjeta::create([
+                'tarjeta_credito_id' => $lockedTarjeta->id,
+                'user_id' => $request->user()->id,
+                'descripcion' => $descripcion,
+                'monto' => $monto,
+                'fecha' => now()->toDateString(),
+            ]);
+
+            HistorialTarjetaCredito::create([
+                'tarjeta_credito_id' => $lockedTarjeta->id,
+                'user_id' => $request->user()->id,
+                'compra_tarjeta_id' => $compra->id,
+                'tipo' => 'compra',
+                'monto' => $monto,
+                'descripcion' => "Compra: " . $descripcion,
+                'fecha' => now()->toDateString(),
+            ]);
+
             return $lockedTarjeta;
         });
 
@@ -213,5 +277,28 @@ class TarjetaCreditoController extends Controller
         \Illuminate\Support\Facades\Artisan::call('tarjetas:aplicar-intereses');
 
         return response()->json($tarjetaCredito->fresh());
+    }
+
+    public function comprasPendientes(Request $request, TarjetaCredito $tarjetaCredito)
+    {
+        if ($tarjetaCredito->user_id !== $request->user()->id) abort(403);
+
+        $compras = $tarjetaCredito->compras()
+            ->where('estado', 'pendiente')
+            ->orderBy('fecha', 'desc')
+            ->get();
+
+        return response()->json($compras);
+    }
+
+    public function historial(Request $request, TarjetaCredito $tarjetaCredito)
+    {
+        if ($tarjetaCredito->user_id !== $request->user()->id) abort(403);
+
+        $historial = $tarjetaCredito->historial()
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($historial);
     }
 }

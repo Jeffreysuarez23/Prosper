@@ -27,4 +27,14 @@ class TarjetaCredito extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function compras()
+    {
+        return $this->hasMany(CompraTarjeta::class, 'tarjeta_credito_id');
+    }
+
+    public function historial()
+    {
+        return $this->hasMany(HistorialTarjetaCredito::class, 'tarjeta_credito_id');
+    }
 }
