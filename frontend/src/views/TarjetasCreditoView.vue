@@ -705,10 +705,10 @@ const formatDateTime = (dateStr) => {
       </div>
       <form @submit.prevent="savePay" autocomplete="off">
         <div class="form-group" style="text-align:left;">
-          <div v-if="comprasPendientes.length > 0" style="margin-bottom: 16px;">
-            <label>Abonar a (Opcional)</label>
-            <select v-model="payData.compra_id" class="form-control">
-              <option value="">Deuda general de la tarjeta</option>
+          <div style="margin-bottom: 16px;">
+            <label>Abonar a</label>
+            <select v-model="payData.compra_id" class="form-control" required>
+              <option value="" disabled>Selecciona una compra</option>
               <option v-for="c in comprasPendientes" :key="c.id" :value="c.id">
                 {{ c.descripcion }} - Debe: {{ formatCurrency(c.monto - c.monto_pagado).replace('COP', '').trim() }}
               </option>
