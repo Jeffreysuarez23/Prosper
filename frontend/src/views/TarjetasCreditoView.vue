@@ -507,14 +507,6 @@ const formatDateTime = (dateStr) => {
         <div class="cc-visual"
           :style="{ background: `linear-gradient(135deg, ${t.color || '#3b82f6'}, ${t.color || '#3b82f6'}dd, ${t.color || '#3b82f6'}88)` }">
           
-          <button class="goal-history-btn" @click="openHistorial(t)" title="Ver historial">
-            <svg viewBox="0 0 24 24" width="20" height="20">
-              <circle cx="12" cy="5" r="2" fill="currentColor"/>
-              <circle cx="12" cy="12" r="2" fill="currentColor"/>
-              <circle cx="12" cy="19" r="2" fill="currentColor"/>
-            </svg>
-          </button>
-          
           <div class="cc-visual-top">
             <span class="cc-chip">
               <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
@@ -523,7 +515,16 @@ const formatDateTime = (dateStr) => {
                 <rect x="5" y="13" width="6" height="3" rx="1" stroke="rgba(255,255,255,.4)" stroke-width="1" />
               </svg>
             </span>
-            <span :class="['cc-status-pill', getStatusInfo(t).statusClass]">{{ getStatusInfo(t).statusText }}</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span :class="['cc-status-pill', getStatusInfo(t).statusClass]">{{ getStatusInfo(t).statusText }}</span>
+              <button class="goal-history-btn" @click="openHistorial(t)" title="Ver historial">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                  <circle cx="12" cy="5" r="2" fill="currentColor"/>
+                  <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                  <circle cx="12" cy="19" r="2" fill="currentColor"/>
+                </svg>
+              </button>
+            </div>
           </div>
           <div class="cc-digits">
             <span>••••</span> <span>••••</span> <span>••••</span> <span>{{ t.ultimos_digitos || '••••' }}</span>
@@ -945,9 +946,6 @@ const formatDateTime = (dateStr) => {
 }
 
 .goal-history-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
   background: rgba(0, 0, 0, 0.2);
   border: none;
   color: white;
