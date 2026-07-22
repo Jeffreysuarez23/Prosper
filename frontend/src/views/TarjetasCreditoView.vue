@@ -491,7 +491,6 @@ const setHistorialPage = (p) => {
 const openHistorial = async (t) => {
   historialCardName.value = t.nombre
   historialData.value = []
-  expandedDeudas.value = []
   historialCurrentPage.value = 1
   historialLoading.value = true
   showHistorialModal.value = true

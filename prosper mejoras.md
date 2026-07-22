@@ -16,7 +16,7 @@
 
 9- elegir cada cuanto te llegan notificaciones (3-4-5 dias antes depende del gusto del usuario)
 
-10- historial de movimientos en gastos fijos
+~~10- historial de movimientos en gastos fijos~~
 
 11- Historial de tarjetas de credito, en el boton de comprar, aparecer descripcion, monto, y de que se compro, para hacer el historial (lado izquierdo gastos lado derecho pagado) si yo compro varias cosas cuando vaya  abonar que me diga a que gasto le abone, solo para tener un control
 
