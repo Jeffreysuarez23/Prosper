@@ -296,7 +296,15 @@ const openPayModal = async (t) => {
   try {
     api.get(`/tarjetas-credito/${t.id}/compras-pendientes`).then(res => {
       comprasPendientes.value = res.data
-      if (res.data.length > 0) {
+      if (debtInfo.penalty > 0) {
+        comprasPendientes.value.unshift({
+          id: 'intereses',
+          descripcion: 'Intereses generados',
+          monto: debtInfo.penalty,
+          monto_pagado: 0
+        })
+      }
+      if (comprasPendientes.value.length > 0) {
         displayPayMonto.value = ''
         payData.value.monto = ''
       }
@@ -427,8 +435,29 @@ const historialData = ref([])
 const historialLoading = ref(false)
 const historialCardName = ref('')
 const historialCurrentPage = ref(1)
-const historialPerPage = 5
+const historialPerPage = 3
 const expandedDeudas = ref([])
+const abonosPages = ref({})
+const abonosPerPage = 5
+
+const getAbonosPage = (cId) => abonosPages.value[cId] || 1
+
+const getAbonosTotalPages = (c) => {
+  if (!c.historial) return 1
+  return Math.ceil(c.historial.length / abonosPerPage) || 1
+}
+
+const getPaginatedAbonos = (c) => {
+  if (!c.historial) return []
+  const page = getAbonosPage(c.id)
+  const start = (page - 1) * abonosPerPage
+  return c.historial.slice(start, start + abonosPerPage)
+}
+
+const setAbonosPage = (cId, p, totalPages) => {
+  if (p < 1 || p > totalPages) return
+  abonosPages.value = { ...abonosPages.value, [cId]: p }
+}
 
 const toggleAccordion = (id) => {
   const idx = expandedDeudas.value.indexOf(id)
@@ -868,7 +897,7 @@ const formatDateTime = (dateStr) => {
           
           <div v-if="expandedDeudas.includes(c.id)" class="accordion-body">
             <div v-if="c.historial && c.historial.length > 0" class="abonos-list">
-              <div v-for="a in c.historial" :key="a.id" class="abono-item">
+              <div v-for="a in getPaginatedAbonos(c)" :key="a.id" class="abono-item">
                 <div class="abono-icon">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                     <path d="M12 5v14M5 12h14" />
@@ -878,6 +907,20 @@ const formatDateTime = (dateStr) => {
                   <span class="abono-fecha">{{ formatDateTime(a.created_at) }}</span>
                 </div>
                 <span class="abono-monto">+ {{ formatCurrency(a.monto).replace('COP', '').trim() }}</span>
+              </div>
+              
+              <div v-if="getAbonosTotalPages(c) > 1" class="pagination" style="margin-top: 12px; padding: 0; justify-content: center; gap: 8px;">
+                <button class="btn-icon" style="width: 28px; height: 28px;" :disabled="getAbonosPage(c.id) === 1" @click.stop="setAbonosPage(c.id, getAbonosPage(c.id) - 1, getAbonosTotalPages(c))">
+                  <svg viewBox="0 0 24 24" width="16" height="16">
+                    <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+                  </svg>
+                </button>
+                <span class="page-info" style="font-size: 0.8rem;">{{ getAbonosPage(c.id) }} de {{ getAbonosTotalPages(c) }}</span>
+                <button class="btn-icon" style="width: 28px; height: 28px;" :disabled="getAbonosPage(c.id) === getAbonosTotalPages(c)" @click.stop="setAbonosPage(c.id, getAbonosPage(c.id) + 1, getAbonosTotalPages(c))">
+                  <svg viewBox="0 0 24 24" width="16" height="16">
+                    <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+                  </svg>
+                </button>
               </div>
             </div>
             <div v-else style="text-align:center; padding: 16px 0; color:var(--text-muted); font-size:0.85rem;">

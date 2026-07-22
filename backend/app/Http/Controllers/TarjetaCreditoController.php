@@ -136,14 +136,14 @@ class TarjetaCreditoController extends Controller
 
         $validated = $request->validate([
             'monto' => 'required|numeric|min:0.01',
-            'compra_id' => 'nullable|exists:compra_tarjeta_creditos,id'
+            'compra_id' => 'nullable'
         ]);
 
         $monto = $validated['monto'];
         $compra_id = $validated['compra_id'] ?? null;
         $compra = null;
 
-        if ($compra_id) {
+        if ($compra_id && $compra_id !== 'intereses') {
             $compra = CompraTarjeta::where('id', $compra_id)
                 ->where('tarjeta_credito_id', $tarjetaCredito->id)
                 ->where('user_id', $request->user()->id)
@@ -162,6 +162,19 @@ class TarjetaCreditoController extends Controller
             $interes = round($tarjetaCredito->deuda_actual * $tasaMensual, 2);
             $tarjetaCredito->deuda_actual += $interes;
             $tarjetaCredito->save();
+            
+            if ($compra_id === 'intereses') {
+                $compra = CompraTarjeta::create([
+                    'tarjeta_credito_id' => $tarjetaCredito->id,
+                    'user_id' => $request->user()->id,
+                    'descripcion' => 'Intereses generados',
+                    'monto' => $interes,
+                    'fecha' => now()->toDateString(),
+                ]);
+                $compra_id = $compra->id;
+            }
+        } else if ($compra_id === 'intereses') {
+            return response()->json(['message' => 'No hay intereses pendientes por pagar.'], 400);
         }
 
         // No pagar más de lo que se debe
