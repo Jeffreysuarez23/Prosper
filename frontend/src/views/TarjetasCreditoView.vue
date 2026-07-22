@@ -880,7 +880,7 @@ const formatDateTime = (dateStr) => {
             <div style="display:flex; justify-content:space-between; align-items:center; width: 100%;">
               <div style="display:flex; flex-direction:column; gap:4px; flex:1;">
                 <span class="historial-tipo">{{ c.descripcion }}</span>
-                <span class="historial-fecha">{{ formatDateTime(c.fecha) }}</span>
+                <span class="historial-fecha">{{ formatDateTime(c.created_at) }}</span>
               </div>
               <div style="display:flex; align-items:center; gap:12px;">
                 <span :class="c.estado === 'pagado' ? 'status-pagado' : 'status-pendiente'">
