@@ -37,9 +37,20 @@ const getCalculatedDebtInfo = (t) => {
   const diffPago = parseInt(t.dia_pago) - todayDay
   
   if (baseDeuda > 0 && diffPago < 0 && t.tasa_interes > 0) {
-    const tasaMensual = parseFloat(t.tasa_interes) / 12 / 100
-    penalty = baseDeuda * tasaMensual
-    totalDeuda = baseDeuda + penalty
+    let cobrar = true
+    if (t.fecha_ultimo_interes) {
+      const today = new Date()
+      const ultimo = new Date(t.fecha_ultimo_interes + 'T00:00:00')
+      if (ultimo.getFullYear() === today.getFullYear() && ultimo.getMonth() === today.getMonth()) {
+        cobrar = false
+      }
+    }
+    
+    if (cobrar) {
+      const tasaMensual = parseFloat(t.tasa_interes) / 12 / 100
+      penalty = baseDeuda * tasaMensual
+      totalDeuda = baseDeuda + penalty
+    }
   }
   
   return { baseDeuda, totalDeuda, penalty, deudaSinInteres: baseDeuda }
@@ -946,10 +957,6 @@ const formatDateTime = (dateStr) => {
         </div>
         
         <button class="btn-ghost btn-sm" :disabled="historialCurrentPage === historialTotalPages" @click="setHistorialPage(historialCurrentPage + 1)">Siguiente</button>
-      </div>
-
-      <div class="form-actions" style="margin-top:20px;">
-        <button type="button" class="btn-ghost" @click="showHistorialModal = false" style="flex:1;">Cerrar</button>
       </div>
     </div>
   </div>

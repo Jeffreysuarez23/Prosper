@@ -156,11 +156,15 @@ class TarjetaCreditoController extends Controller
 
         // --- CALCULAR INTERÉS PENDIENTE ANTES DE PAGAR ---
         $today = now();
-        if ($tarjetaCredito->deuda_actual > 0 && $today->day > $tarjetaCredito->dia_pago && $tarjetaCredito->tasa_interes > 0) {
+        $ultimoCobro = $tarjetaCredito->fecha_ultimo_interes ? \Carbon\Carbon::parse($tarjetaCredito->fecha_ultimo_interes) : null;
+        $cobrarInteres = (!$ultimoCobro || $ultimoCobro->format('Y-m') !== $today->format('Y-m'));
+
+        if ($cobrarInteres && $tarjetaCredito->deuda_actual > 0 && $today->day > $tarjetaCredito->dia_pago && $tarjetaCredito->tasa_interes > 0) {
             // Siempre aplicar intereses al momento de pagar cuando el pago está atrasado
             $tasaMensual = $tarjetaCredito->tasa_interes / 12 / 100;
             $interes = round($tarjetaCredito->deuda_actual * $tasaMensual, 2);
             $tarjetaCredito->deuda_actual += $interes;
+            $tarjetaCredito->fecha_ultimo_interes = $today->toDateString();
             $tarjetaCredito->save();
             
             if ($compra_id === 'intereses') {
