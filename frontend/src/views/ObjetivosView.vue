@@ -758,7 +758,7 @@ const formatDateTime = (dateStr) => {
       <div class="modal-head premium-head" style="margin-bottom:16px;">
         <div class="head-icon">📋</div>
         <div class="head-text" style="text-align:left;">
-          <h2>Historial</h2>
+          <h2>Historial del objetivo</h2>
           <p>{{ historialGoalName }}</p>
         </div>
         <button class="modal-close" @click="showHistorialModal = false" aria-label="Cerrar">

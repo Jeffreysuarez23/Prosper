@@ -712,27 +712,28 @@ const formatDateTime = (dateStr) => {
 
   <!-- Modal Historial -->
   <div v-if="showHistorialModal" class="modal" style="display: flex;">
-    <div class="modal-content">
-      <div class="modal-head" style="background: var(--accent); color: white;">
-        <div class="head-icon" style="background: rgba(255,255,255,0.2);">📋</div>
-        <div class="head-text">
-          <h2>Historial</h2>
-          <p style="color: rgba(255,255,255,0.9);">{{ historialExpenseName }}</p>
+    <div class="modal-content" style="max-width:480px; padding-top:32px;">
+      <div class="modal-head premium-head" style="margin-bottom:16px;">
+        <div class="head-icon">📋</div>
+        <div class="head-text" style="text-align:left;">
+          <h2>Historial del gasto</h2>
+          <p>{{ historialExpenseName }}</p>
         </div>
-        <button class="modal-close" @click="showHistorialModal = false" aria-label="Cerrar" style="color: white; background: rgba(255,255,255,0.2);">
+        <button class="modal-close" @click="showHistorialModal = false" aria-label="Cerrar">
           <svg viewBox="0 0 24 24" width="20" height="20">
             <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
           </svg>
         </button>
       </div>
       
-      <div v-if="historialLoading" style="padding:40px; text-align:center; color:var(--text-muted);">
+      <div v-if="historialLoading" style="text-align:center; padding: 32px 0; color: var(--text-muted);">
         Cargando historial...
       </div>
       
-      <div v-else-if="historialData.length === 0" style="padding:40px; text-align:center; color:var(--text-muted);">
-        <div style="font-size:3rem; margin-bottom:12px; opacity:0.5;">📭</div>
-        <p>Aún no hay movimientos registrados.</p>
+      <div v-else-if="historialData.length === 0" style="text-align:center; padding: 32px 0;">
+        <div style="font-size: 2.5rem; margin-bottom: 12px;">📭</div>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">No hay movimientos registrados aún.</p>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px;">Los abonos y retiros que realices aparecerán aquí.</p>
       </div>
 
       <div v-else class="historial-list">
@@ -866,4 +867,78 @@ const formatDateTime = (dateStr) => {
   .goal-btn { font-size: .75rem; padding: 6px 0; }
 }
 
+/* ── Historial List ── */
+.historial-list {
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.historial-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 8px;
+  border-radius: 10px;
+  transition: background 0.15s;
+}
+
+.historial-item:hover {
+  background: var(--surface-2);
+}
+
+.historial-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hi-abono {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.hi-retiro {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.historial-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.historial-tipo {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.historial-fecha {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.historial-monto {
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.hm-abono {
+  color: #22c55e;
+}
+
+.hm-retiro {
+  color: #ef4444;
+}
 </style>
