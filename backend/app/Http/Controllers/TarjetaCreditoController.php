@@ -141,6 +141,7 @@ class TarjetaCreditoController extends Controller
 
         $monto = $validated['monto'];
         $compra_id = $validated['compra_id'] ?? null;
+        $compra = null;
 
         if ($compra_id) {
             $compra = CompraTarjeta::where('id', $compra_id)
@@ -168,7 +169,7 @@ class TarjetaCreditoController extends Controller
             $monto = $tarjetaCredito->deuda_actual;
         }
 
-        $tarjetaCredito = \Illuminate\Support\Facades\DB::transaction(function () use ($tarjetaCredito, $monto, $request) {
+        $tarjetaCredito = \Illuminate\Support\Facades\DB::transaction(function () use ($tarjetaCredito, $monto, $request, $compra, $compra_id) {
             $lockedTarjeta = TarjetaCredito::where('id', $tarjetaCredito->id)->lockForUpdate()->first();
 
             $lockedTarjeta->update([
