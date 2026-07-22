@@ -10,9 +10,9 @@
 
 ~~6- recordatorio en OBJETIVOS, cada cuanto va a ahorrar ejemplo (cada 15 dias recuerda abonar)~~
 
-7- en objetivos hacer que si le das cick a un objetivo (al modal) mostarr historial de abono y retiro.
+~~7- en objetivos hacer que si le das cick a un objetivo (al modal) mostarr historial de abono y retiro.~~
 
-8- en objetivos hacer el boton de retiro para que no se tenga que editar si quieres bajar el ahorro
+~~8- en objetivos hacer el boton de retiro para que no se tenga que editar si quieres bajar el ahorro~~
 
 9- elegir cada cuanto te llegan notificaciones (3-4-5 dias antes depende del gusto del usuario)
 
