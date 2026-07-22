@@ -296,9 +296,27 @@ const openPayModal = async (t) => {
   try {
     api.get(`/tarjetas-credito/${t.id}/compras-pendientes`).then(res => {
       comprasPendientes.value = res.data
+      if (res.data.length > 0) {
+        displayPayMonto.value = ''
+        payData.value.monto = ''
+      }
     })
   } catch(e) {
     console.error(e)
+  }
+}
+
+const handleCompraChange = () => {
+  if (!payData.value.compra_id) return
+  const c = comprasPendientes.value.find(x => x.id === payData.value.compra_id)
+  if (c) {
+    const debe = parseFloat(c.monto) - parseFloat(c.monto_pagado)
+    payData.value.deuda_actual = debe
+    payData.value.deuda_sin_interes = debe
+    payData.value.penalty = 0
+    
+    payData.value.monto = debe
+    displayPayMonto.value = new Intl.NumberFormat('es-CO').format(debe)
   }
 }
 
@@ -707,7 +725,7 @@ const formatDateTime = (dateStr) => {
         <div class="form-group" style="text-align:left;">
           <div style="margin-bottom: 16px;">
             <label>Abonar a</label>
-            <select v-model="payData.compra_id" class="form-control" required>
+            <select v-model="payData.compra_id" @change="handleCompraChange" class="form-control" required>
               <option value="" disabled>Selecciona una compra</option>
               <option v-for="c in comprasPendientes" :key="c.id" :value="c.id">
                 {{ c.descripcion }} - Debe: {{ formatCurrency(c.monto - c.monto_pagado).replace('COP', '').trim() }}
