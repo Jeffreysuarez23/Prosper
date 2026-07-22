@@ -447,33 +447,31 @@ const historialLoading = ref(false)
 const historialCardName = ref('')
 const historialCurrentPage = ref(1)
 const historialPerPage = 3
-const expandedDeudas = ref([])
-const abonosPages = ref({})
+const showAbonosModal = ref(false)
+const selectedCompra = ref(null)
+const abonosCurrentPage = ref(1)
 const abonosPerPage = 5
 
-const getAbonosPage = (cId) => abonosPages.value[cId] || 1
+const getAbonosTotalPages = computed(() => {
+  if (!selectedCompra.value || !selectedCompra.value.historial) return 1
+  return Math.ceil(selectedCompra.value.historial.length / abonosPerPage) || 1
+})
 
-const getAbonosTotalPages = (c) => {
-  if (!c.historial) return 1
-  return Math.ceil(c.historial.length / abonosPerPage) || 1
+const getPaginatedAbonos = computed(() => {
+  if (!selectedCompra.value || !selectedCompra.value.historial) return []
+  const start = (abonosCurrentPage.value - 1) * abonosPerPage
+  return selectedCompra.value.historial.slice(start, start + abonosPerPage)
+})
+
+const setAbonosPage = (p) => {
+  if (p < 1 || p > getAbonosTotalPages.value) return
+  abonosCurrentPage.value = p
 }
 
-const getPaginatedAbonos = (c) => {
-  if (!c.historial) return []
-  const page = getAbonosPage(c.id)
-  const start = (page - 1) * abonosPerPage
-  return c.historial.slice(start, start + abonosPerPage)
-}
-
-const setAbonosPage = (cId, p, totalPages) => {
-  if (p < 1 || p > totalPages) return
-  abonosPages.value = { ...abonosPages.value, [cId]: p }
-}
-
-const toggleAccordion = (id) => {
-  const idx = expandedDeudas.value.indexOf(id)
-  if (idx > -1) expandedDeudas.value.splice(idx, 1)
-  else expandedDeudas.value.push(id)
+const openAbonosModal = (compra) => {
+  selectedCompra.value = compra
+  abonosCurrentPage.value = 1
+  showAbonosModal.value = true
 }
 
 const historialTotalPages = computed(() => {
@@ -879,7 +877,7 @@ const formatDateTime = (dateStr) => {
 
       <div v-else class="historial-list">
         <div v-for="c in historialPaginatedData" :key="c.id" class="historial-item-accordion">
-          <div class="accordion-header" @click="toggleAccordion(c.id)">
+          <div class="accordion-header" @click="openAbonosModal(c)">
             <div style="display:flex; justify-content:space-between; align-items:center; width: 100%;">
               <div style="display:flex; flex-direction:column; gap:4px; flex:1;">
                 <span class="historial-tipo">{{ c.descripcion }}</span>
@@ -889,7 +887,7 @@ const formatDateTime = (dateStr) => {
                 <span :class="c.estado === 'pagado' ? 'status-pagado' : 'status-pendiente'">
                   {{ c.estado === 'pagado' ? 'Saldada' : 'Pendiente' }}
                 </span>
-                <svg :class="{'rotate-180': expandedDeudas.includes(c.id)}" viewBox="0 0 24 24" width="20" height="20" style="transition: transform 0.3s; color: var(--text-muted);">
+                <svg viewBox="0 0 24 24" width="20" height="20" style="color: var(--text-muted); transform: rotate(-90deg);">
                   <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
                 </svg>
               </div>
@@ -903,39 +901,6 @@ const formatDateTime = (dateStr) => {
                <div class="cc-util-bar">
                  <div class="cc-util-fill" :style="{ width: (c.monto_pagado / c.monto * 100) + '%', background: c.estado === 'pagado' ? 'var(--green)' : 'var(--accent)' }"></div>
                </div>
-            </div>
-          </div>
-          
-          <div v-if="expandedDeudas.includes(c.id)" class="accordion-body">
-            <div v-if="c.historial && c.historial.length > 0" class="abonos-list">
-              <div v-for="a in getPaginatedAbonos(c)" :key="a.id" class="abono-item">
-                <div class="abono-icon">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                </div>
-                <div class="abono-info">
-                  <span class="abono-fecha">{{ formatDateTime(a.created_at) }}</span>
-                </div>
-                <span class="abono-monto">+ {{ formatCurrency(a.monto).replace('COP', '').trim() }}</span>
-              </div>
-              
-              <div v-if="getAbonosTotalPages(c) > 1" class="pagination" style="margin-top: 12px; padding: 0; justify-content: center; gap: 8px;">
-                <button class="btn-icon" style="width: 28px; height: 28px;" :disabled="getAbonosPage(c.id) === 1" @click.stop="setAbonosPage(c.id, getAbonosPage(c.id) - 1, getAbonosTotalPages(c))">
-                  <svg viewBox="0 0 24 24" width="16" height="16">
-                    <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
-                  </svg>
-                </button>
-                <span class="page-info" style="font-size: 0.8rem;">{{ getAbonosPage(c.id) }} de {{ getAbonosTotalPages(c) }}</span>
-                <button class="btn-icon" style="width: 28px; height: 28px;" :disabled="getAbonosPage(c.id) === getAbonosTotalPages(c)" @click.stop="setAbonosPage(c.id, getAbonosPage(c.id) + 1, getAbonosTotalPages(c))">
-                  <svg viewBox="0 0 24 24" width="16" height="16">
-                    <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div v-else style="text-align:center; padding: 16px 0; color:var(--text-muted); font-size:0.85rem;">
-              No se han registrado abonos a esta deuda.
             </div>
           </div>
         </div>
@@ -958,6 +923,63 @@ const formatDateTime = (dateStr) => {
         
         <button class="btn-ghost btn-sm" :disabled="historialCurrentPage === historialTotalPages" @click="setHistorialPage(historialCurrentPage + 1)">Siguiente</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ============ MODAL: ABONOS (SUB-MODAL) ============ -->
+  <div v-if="showAbonosModal" class="modal" style="display: flex;">
+    <div class="modal-content" style="max-width:440px; padding-top:32px;">
+      <div class="modal-head premium-head" style="margin-bottom:16px;">
+        <div class="head-icon" style="color:var(--green);">💰</div>
+        <div class="head-text" style="text-align:left;">
+          <h2>Abonos Registrados</h2>
+          <p>{{ selectedCompra?.descripcion }}</p>
+        </div>
+        <button class="modal-close" @click="showAbonosModal = false" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+
+      <div v-if="selectedCompra?.historial && selectedCompra.historial.length > 0">
+        <div class="abonos-list">
+          <div v-for="a in getPaginatedAbonos" :key="a.id" class="abono-item" style="background:var(--surface);">
+            <div class="abono-icon">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </div>
+            <div class="abono-info">
+              <span class="abono-fecha">{{ formatDateTime(a.created_at) }}</span>
+            </div>
+            <span class="abono-monto">+ {{ formatCurrency(a.monto).replace('COP', '').trim() }}</span>
+          </div>
+        </div>
+        
+        <!-- Paginación interna -->
+        <div v-if="getAbonosTotalPages > 1" class="pagination" style="display:flex; justify-content:center; gap:8px; margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
+          <button class="btn-ghost btn-sm" :disabled="abonosCurrentPage === 1" @click="setAbonosPage(abonosCurrentPage - 1)">Anterior</button>
+          
+          <div style="display:flex; align-items:center; gap:4px;">
+            <button 
+              v-for="p in getAbonosTotalPages" :key="p"
+              @click="setAbonosPage(p)"
+              :class="['btn-sm', abonosCurrentPage === p ? 'btn-accent' : 'btn-ghost']"
+              style="min-width:32px; height:32px; padding:0; border-radius:6px; display:flex; align-items:center; justify-content:center;"
+            >
+              {{ p }}
+            </button>
+          </div>
+          
+          <button class="btn-ghost btn-sm" :disabled="abonosCurrentPage === getAbonosTotalPages" @click="setAbonosPage(abonosCurrentPage + 1)">Siguiente</button>
+        </div>
+      </div>
+      <div v-else style="text-align:center; padding: 32px 0;">
+        <div style="font-size: 2.5rem; margin-bottom: 12px;">💸</div>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">No se han registrado abonos a esta deuda.</p>
+      </div>
+
     </div>
   </div>
 </template>
