@@ -18,7 +18,7 @@
 
 ~~10- historial de movimientos en gastos fijos~~
 
-11- Historial de tarjetas de credito, en el boton de comprar, aparecer descripcion, monto, y de que se compro, para hacer el historial (lado izquierdo gastos lado derecho pagado) si yo compro varias cosas cuando vaya  abonar que me diga a que gasto le abone, solo para tener un control
+~~11- Historial de tarjetas de credito, en el boton de comprar, aparecer descripcion, monto, y de que se compro, para hacer el historial (lado izquierdo gastos lado derecho pagado) si yo compro varias cosas cuando vaya  abonar que me diga a que gasto le abone, solo para tener un control~~
 
 12- Eliminar el plan pro, no cambia en nada con el ultra
 
