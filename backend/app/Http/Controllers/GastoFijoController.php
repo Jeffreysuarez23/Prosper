@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\GastoFijo;
+use App\Models\HistorialGastoFijo;
 use Illuminate\Http\Request;
 
 class GastoFijoController extends Controller
@@ -142,6 +143,14 @@ class GastoFijoController extends Controller
                 'metodo_pago' => 'efectivo',
             ]);
 
+            HistorialGastoFijo::create([
+                'gasto_fijo_id' => $lockedGasto->id,
+                'user_id' => $request->user()->id,
+                'tipo' => 'abono',
+                'monto' => $abono,
+                'fecha' => now()->toDateString(),
+            ]);
+
             if ($nuevo_pagado >= $lockedGasto->monto) {
                 $request->user()->notificaciones()
                     ->where('categoria', 'gasto_fijo')
@@ -194,9 +203,30 @@ class GastoFijoController extends Controller
                 'metodo_pago' => 'efectivo',
             ]);
 
+            HistorialGastoFijo::create([
+                'gasto_fijo_id' => $lockedGasto->id,
+                'user_id' => $request->user()->id,
+                'tipo' => 'retiro',
+                'monto' => $retiro,
+                'fecha' => now()->toDateString(),
+            ]);
+
             return $lockedGasto;
         });
 
         return response()->json($gastoFijo);
+    }
+
+    public function historial(GastoFijo $gastoFijo)
+    {
+        if ($gastoFijo->user_id !== request()->user()->id) {
+            abort(403);
+        }
+
+        $historial = $gastoFijo->historial()
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($historial);
     }
 }

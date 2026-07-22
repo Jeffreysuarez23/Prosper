@@ -443,6 +443,53 @@ const deleteExpense = async (id) => {
     }
   }
 }
+
+// -----------------------------
+// HISTORIAL MODAL LOGIC
+// -----------------------------
+const showHistorialModal = ref(false)
+const historialData = ref([])
+const historialLoading = ref(false)
+const historialExpenseName = ref('')
+const historialCurrentPage = ref(1)
+const historialPerPage = 5
+
+const historialTotalPages = computed(() => {
+  return Math.ceil(historialData.value.length / historialPerPage) || 1
+})
+
+const historialPaginatedData = computed(() => {
+  const start = (historialCurrentPage.value - 1) * historialPerPage
+  return historialData.value.slice(start, start + historialPerPage)
+})
+
+const setHistorialPage = (p) => {
+  if (p < 1 || p > historialTotalPages.value) return
+  historialCurrentPage.value = p
+}
+
+const openHistorial = async (g) => {
+  historialExpenseName.value = g.nombre
+  historialData.value = []
+  historialCurrentPage.value = 1
+  historialLoading.value = true
+  showHistorialModal.value = true
+  try {
+    const res = await api.get(`/gastos-fijos/${g.id}/historial`)
+    historialData.value = res.data
+  } catch (error) {
+    console.error('Error cargando historial', error)
+  } finally {
+    historialLoading.value = false
+  }
+}
+
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) + ' — ' +
+         d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
+}
 </script>
 
 <template>
@@ -491,6 +538,11 @@ const deleteExpense = async (id) => {
 
     <div v-if="filteredData.length > 0" class="goals-grid" id="expensesGrid">
       <div v-for="g in filteredData" :key="g.id" :class="['expense-card', getStatusInfo(g).statusClass]">
+        <button class="expense-history-btn" @click="openHistorial(g)" title="Ver historial">
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path d="M12 12m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0M12 5m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0M12 19m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0" fill="currentColor" />
+          </svg>
+        </button>
         <div :class="['expense-status-badge', getStatusInfo(g).statusBadgeClass]">{{ getStatusInfo(g).statusText }}</div>
         
         <div style="display:flex; gap:16px; align-items:center; margin-bottom:16px;">
@@ -657,6 +709,76 @@ const deleteExpense = async (id) => {
       </form>
     </div>
   </div>
+
+  <!-- Modal Historial -->
+  <div v-if="showHistorialModal" class="modal" style="display: flex;">
+    <div class="modal-content">
+      <div class="modal-head" style="background: var(--accent); color: white;">
+        <div class="head-icon" style="background: rgba(255,255,255,0.2);">📋</div>
+        <div class="head-text">
+          <h2>Historial</h2>
+          <p style="color: rgba(255,255,255,0.9);">{{ historialExpenseName }}</p>
+        </div>
+        <button class="modal-close" @click="showHistorialModal = false" aria-label="Cerrar" style="color: white; background: rgba(255,255,255,0.2);">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+      
+      <div v-if="historialLoading" style="padding:40px; text-align:center; color:var(--text-muted);">
+        Cargando historial...
+      </div>
+      
+      <div v-else-if="historialData.length === 0" style="padding:40px; text-align:center; color:var(--text-muted);">
+        <div style="font-size:3rem; margin-bottom:12px; opacity:0.5;">📭</div>
+        <p>Aún no hay movimientos registrados.</p>
+      </div>
+
+      <div v-else class="historial-list">
+        <div v-for="h in historialPaginatedData" :key="h.id" class="historial-item">
+          <div class="historial-icon" :class="h.tipo === 'abono' ? 'hi-abono' : 'hi-retiro'">
+            <svg v-if="h.tipo === 'abono'" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            <svg v-else viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M5 12h14" />
+            </svg>
+          </div>
+          <div class="historial-info">
+            <span class="historial-tipo">{{ h.tipo === 'abono' ? 'Abono' : 'Retiro' }}</span>
+            <span class="historial-fecha">{{ formatDateTime(h.created_at) }}</span>
+          </div>
+          <span class="historial-monto" :class="h.tipo === 'abono' ? 'hm-abono' : 'hm-retiro'">
+            {{ h.tipo === 'abono' ? '+' : '-' }} {{ formatCurrency(h.monto).replace('COP', '').trim() }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Paginación -->
+      <div v-if="historialTotalPages > 1" class="pagination" style="display:flex; justify-content:center; gap:8px; margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
+        <button class="btn-ghost btn-sm" :disabled="historialCurrentPage === 1" @click="setHistorialPage(historialCurrentPage - 1)">Anterior</button>
+        
+        <div style="display:flex; align-items:center; gap:4px;">
+          <button 
+            v-for="p in historialTotalPages" :key="p"
+            @click="setHistorialPage(p)"
+            :class="['btn-sm', historialCurrentPage === p ? 'btn-accent' : 'btn-ghost']"
+            style="min-width:32px; height:32px; padding:0; border-radius:6px; display:flex; align-items:center; justify-content:center;"
+          >
+            {{ p }}
+          </button>
+        </div>
+        
+        <button class="btn-ghost btn-sm" :disabled="historialCurrentPage === historialTotalPages" @click="setHistorialPage(historialCurrentPage + 1)">Siguiente</button>
+      </div>
+
+      <div class="form-actions" style="margin-top:20px;">
+        <button type="button" class="btn-ghost" @click="showHistorialModal = false" style="flex:1;">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
 </template>
 
 <style scoped>
@@ -672,10 +794,47 @@ const deleteExpense = async (id) => {
 .expense-card.is-urgent { border-left: 4px solid var(--red); background: linear-gradient(90deg, rgba(239,68,68,0.08) 0%, var(--surface) 100%); }
 
 .expense-emoji {
-  width:48px; height:48px; border-radius:14px; flex-shrink:0;
-  background:var(--surface-2); display:grid; place-items:center;
-  font-size:1.5rem; border:1px solid var(--border);
+  width: 48px;
+  height: 48px;
+  background: var(--surface-2);
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
 }
+
+.expense-card {
+  position: relative;
+}
+
+.expense-history-btn {
+  position: absolute;
+  top: 14px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.expense-history-btn:hover {
+  opacity: 1;
+  background: var(--surface-2);
+  color: var(--accent);
+}
+
+.expense-card .expense-status-badge {
+  right: 46px;
+}
+
 .expense-status-badge {
   position:absolute; top:16px; right:18px;
   font-family:var(--font-mono); font-weight:700; font-size:.75rem;

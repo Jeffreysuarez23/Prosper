@@ -28,6 +28,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('objetivos', ObjetivoController::class);
     Route::get('objetivos/{objetivo}/historial', [ObjetivoController::class, 'historial']);
     Route::apiResource('gastos-fijos', GastoFijoController::class);
+    Route::get('gastos-fijos/{gastoFijo}/historial', [GastoFijoController::class, 'historial']);
     Route::post('gastos-fijos/{gastoFijo}/abono', [GastoFijoController::class, 'payPartial']);
     Route::post('gastos-fijos/{gastoFijo}/retirar', [GastoFijoController::class, 'withdrawPartial']);
     

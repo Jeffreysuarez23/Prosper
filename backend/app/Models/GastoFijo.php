@@ -22,4 +22,9 @@ class GastoFijo extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function historial()
+    {
+        return $this->hasMany(HistorialGastoFijo::class, 'gasto_fijo_id');
+    }
 }
