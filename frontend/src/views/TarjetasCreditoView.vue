@@ -428,6 +428,13 @@ const historialLoading = ref(false)
 const historialCardName = ref('')
 const historialCurrentPage = ref(1)
 const historialPerPage = 5
+const expandedDeudas = ref([])
+
+const toggleAccordion = (id) => {
+  const idx = expandedDeudas.value.indexOf(id)
+  if (idx > -1) expandedDeudas.value.splice(idx, 1)
+  else expandedDeudas.value.push(id)
+}
 
 const historialTotalPages = computed(() => {
   return Math.ceil(historialData.value.length / historialPerPage) || 1
@@ -446,6 +453,7 @@ const setHistorialPage = (p) => {
 const openHistorial = async (t) => {
   historialCardName.value = t.nombre
   historialData.value = []
+  expandedDeudas.value = []
   historialCurrentPage.value = 1
   historialLoading.value = true
   showHistorialModal.value = true
@@ -830,22 +838,52 @@ const formatDateTime = (dateStr) => {
       </div>
 
       <div v-else class="historial-list">
-        <div v-for="h in historialPaginatedData" :key="h.id" class="historial-item">
-          <div class="historial-icon" :class="h.tipo === 'abono' ? 'hi-abono' : 'hi-retiro'">
-            <svg v-if="h.tipo === 'abono'" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            <svg v-else viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-              <path d="M5 12h14" />
-            </svg>
+        <div v-for="c in historialPaginatedData" :key="c.id" class="historial-item-accordion">
+          <div class="accordion-header" @click="toggleAccordion(c.id)">
+            <div style="display:flex; justify-content:space-between; align-items:center; width: 100%;">
+              <div style="display:flex; flex-direction:column; gap:4px; flex:1;">
+                <span class="historial-tipo">{{ c.descripcion }}</span>
+                <span class="historial-fecha">{{ formatDateTime(c.fecha) }}</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:12px;">
+                <span :class="c.estado === 'pagado' ? 'status-pagado' : 'status-pendiente'">
+                  {{ c.estado === 'pagado' ? 'Saldada' : 'Pendiente' }}
+                </span>
+                <svg :class="{'rotate-180': expandedDeudas.includes(c.id)}" viewBox="0 0 24 24" width="20" height="20" style="transition: transform 0.3s; color: var(--text-muted);">
+                  <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+                </svg>
+              </div>
+            </div>
+            
+            <div style="margin-top: 12px;">
+               <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">
+                 <span>Pagado: {{ formatCurrency(c.monto_pagado).replace('COP', '').trim() }}</span>
+                 <span>Total: {{ formatCurrency(c.monto).replace('COP', '').trim() }}</span>
+               </div>
+               <div class="cc-util-bar">
+                 <div class="cc-util-fill" :style="{ width: (c.monto_pagado / c.monto * 100) + '%', background: c.estado === 'pagado' ? 'var(--green)' : 'var(--accent)' }"></div>
+               </div>
+            </div>
           </div>
-          <div class="historial-info">
-            <span class="historial-tipo">{{ h.descripcion }}</span>
-            <span class="historial-fecha">{{ formatDateTime(h.created_at) }}</span>
+          
+          <div v-if="expandedDeudas.includes(c.id)" class="accordion-body">
+            <div v-if="c.historial && c.historial.length > 0" class="abonos-list">
+              <div v-for="a in c.historial" :key="a.id" class="abono-item">
+                <div class="abono-icon">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </div>
+                <div class="abono-info">
+                  <span class="abono-fecha">{{ formatDateTime(a.created_at) }}</span>
+                </div>
+                <span class="abono-monto">+ {{ formatCurrency(a.monto).replace('COP', '').trim() }}</span>
+              </div>
+            </div>
+            <div v-else style="text-align:center; padding: 16px 0; color:var(--text-muted); font-size:0.85rem;">
+              No se han registrado abonos a esta deuda.
+            </div>
           </div>
-          <span class="historial-monto" :class="h.tipo === 'abono' ? 'hm-abono' : 'hm-retiro'">
-            {{ h.tipo === 'abono' ? '+' : '-' }} {{ formatCurrency(h.monto).replace('COP', '').trim() }}
-          </span>
         </div>
       </div>
 
@@ -982,58 +1020,111 @@ const formatDateTime = (dateStr) => {
   color: var(--accent);
 }
 
-/* ── Historial List ── */
+/* ── Historial List (Accordion) ── */
 .historial-list {
-  max-height: 400px;
+  max-height: 440px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 12px;
+  padding-right: 4px;
 }
 
-.historial-item {
+.historial-item-accordion {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.historial-item-accordion:hover {
+  border-color: var(--accent);
+}
+
+.accordion-header {
+  padding: 16px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.02);
+  transition: background 0.2s;
+}
+
+.accordion-header:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.accordion-body {
+  border-top: 1px solid var(--border);
+  background: rgba(0,0,0,0.2);
+  padding: 12px 16px;
+}
+
+.status-pagado {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-pendiente {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fcd34d;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.rotate-180 {
+  transform: rotate(180deg);
+}
+
+.abonos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.abono-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 8px;
-  border-radius: 10px;
-  transition: background 0.15s;
-}
-
-.historial-item:hover {
+  padding: 8px 12px;
   background: var(--surface-2);
+  border-radius: 8px;
 }
 
-.historial-icon {
-  width: 34px;
-  height: 34px;
+.abono-icon {
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.hi-abono {
-  background: rgba(34, 197, 94, 0.15);
+.abono-info {
+  flex: 1;
+}
+
+.abono-fecha {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.abono-monto {
+  font-weight: 700;
+  font-size: 0.9rem;
   color: #22c55e;
 }
 
-.hi-retiro {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-}
-
-.historial-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
 .historial-tipo {
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
@@ -1044,20 +1135,6 @@ const formatDateTime = (dateStr) => {
 .historial-fecha {
   font-size: 0.75rem;
   color: var(--text-muted);
-}
-
-.historial-monto {
-  font-weight: 700;
-  font-size: 0.9rem;
-  white-space: nowrap;
-}
-
-.hm-abono {
-  color: #22c55e;
-}
-
-.hm-retiro {
-  color: #ef4444;
 }
 
 .cc-digits {

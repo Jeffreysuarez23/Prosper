@@ -296,10 +296,13 @@ class TarjetaCreditoController extends Controller
     {
         if ($tarjetaCredito->user_id !== $request->user()->id) abort(403);
 
-        $historial = $tarjetaCredito->historial()
+        $compras = $tarjetaCredito->compras()
+            ->with(['historial' => function($query) {
+                $query->where('tipo', 'abono')->orderBy('created_at', 'desc');
+            }])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return response()->json($historial);
+        return response()->json($compras);
     }
 }

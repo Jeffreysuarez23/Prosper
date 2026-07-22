@@ -27,4 +27,9 @@ class CompraTarjeta extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function historial()
+    {
+        return $this->hasMany(HistorialTarjetaCredito::class, 'compra_tarjeta_id');
+    }
 }
