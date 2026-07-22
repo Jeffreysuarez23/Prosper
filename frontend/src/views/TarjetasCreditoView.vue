@@ -946,9 +946,9 @@ const formatDateTime = (dateStr) => {
 }
 
 .goal-history-btn {
-  background: rgba(0, 0, 0, 0.2);
+  background: none;
   border: none;
-  color: white;
+  color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   padding: 4px;
   border-radius: 6px;
@@ -960,7 +960,8 @@ const formatDateTime = (dateStr) => {
 }
 
 .goal-history-btn:hover {
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--accent);
 }
 
 /* ── Historial List ── */
