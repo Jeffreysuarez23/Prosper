@@ -33,6 +33,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('gastos-fijos/{gastoFijo}/retirar', [GastoFijoController::class, 'withdrawPartial']);
     
     Route::apiResource('tarjetas-credito', TarjetaCreditoController::class);
+    Route::get('tarjetas-credito/{tarjetaCredito}/historial', [TarjetaCreditoController::class, 'historial']);
+    Route::get('tarjetas-credito/{tarjetaCredito}/compras-pendientes', [TarjetaCreditoController::class, 'comprasPendientes']);
     Route::post('tarjetas-credito/{tarjetaCredito}/pago', [TarjetaCreditoController::class, 'pagarTarjeta']);
     Route::post('tarjetas-credito/{tarjetaCredito}/deuda', [TarjetaCreditoController::class, 'agregarDeuda']);
     
