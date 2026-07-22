@@ -875,7 +875,7 @@ const formatDateTime = (dateStr) => {
       </div>
 
       <div v-else class="historial-list">
-        <div v-for="c in historialPaginatedData" :key="c.id" class="historial-item-accordion">
+        <div v-for="c in historialPaginatedData" :key="c.id" :class="['historial-item-accordion', c.estado === 'pagado' ? 'item-saldada' : 'item-pendiente']">
           <div class="accordion-header" @click="openAbonosModal(c)">
             <div style="display:flex; justify-content:space-between; align-items:center; width: 100%;">
               <div style="display:flex; flex-direction:column; gap:4px; flex:1;">
@@ -1107,6 +1107,16 @@ const formatDateTime = (dateStr) => {
   border-radius: 10px;
   overflow: hidden;
   transition: all 0.2s;
+}
+
+.historial-item-accordion.item-saldada {
+  background: rgba(34, 197, 94, 0.05);
+  border-color: rgba(34, 197, 94, 0.15);
+}
+
+.historial-item-accordion.item-pendiente {
+  background: rgba(245, 158, 11, 0.05);
+  border-color: rgba(245, 158, 11, 0.15);
 }
 
 .historial-item-accordion:hover {
