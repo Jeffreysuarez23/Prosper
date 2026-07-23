@@ -22,14 +22,12 @@ class AdminController extends Controller
             ->groupBy('plan')
             ->pluck('total', 'plan')->toArray();
 
-        $proUsers = $usersByPlan['pro'] ?? 0;
         $ultraUsers = $usersByPlan['ultra'] ?? 0;
-        $gratisUsers = $totalUsers - $proUsers - $ultraUsers;
+        $gratisUsers = $totalUsers - $ultraUsers;
 
         return response()->json([
             'total_users' => $totalUsers,
             'gratis_users' => $gratisUsers,
-            'pro_users' => $proUsers,
             'ultra_users' => $ultraUsers,
             'total_movimientos' => $totalMovimientos
         ]);

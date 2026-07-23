@@ -56,7 +56,7 @@ const formatDate = (dateString) => {
           <p class="text-muted">{{ data.user.email }} | Tel: {{ data.user.telefono || 'N/A' }}</p>
         </div>
         <div class="profile-plan">
-          <span class="badge" :class="data.user.membresia?.plan === 'ultra' ? 'badge-ultra' : (data.user.membresia?.plan === 'pro' ? 'badge-pro' : 'badge-gratis')">
+          <span class="badge" :class="data.user.membresia?.plan === 'ultra' ? 'badge-ultra' : 'badge-gratis'">
             {{ (data.user.membresia?.plan || 'GRATIS').toUpperCase() }}
           </span>
         </div>
@@ -124,7 +124,7 @@ const formatDate = (dateString) => {
                 <td><strong>{{ o.nombre }}</strong></td>
                 <td>{{ formatDate(o.fecha_limite) }}</td>
                 <td>
-                  <span class="badge" :class="o.completado ? 'badge-pro' : 'badge-gratis'">
+                  <span class="badge" :class="o.completado ? 'badge-success' : 'badge-gratis'">
                     {{ o.completado ? 'Completado' : 'En Progreso' }}
                   </span>
                 </td>
@@ -341,7 +341,7 @@ const formatDate = (dateString) => {
   font-weight: bold;
 }
 .badge-gratis { background: rgba(255,255,255,0.1); color: var(--cc-text); }
-.badge-pro { background: rgba(79, 211, 168, 0.15); color: #4fd3a8; }
+.badge-success { background: rgba(79, 211, 168, 0.15); color: #4fd3a8; }
 .badge-ultra { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
 
 .loading-state {

@@ -27,7 +27,6 @@ const getPlanName = (user) => {
 
 const getPlanBadgeClass = (plan) => {
   if (plan === 'ultra') return 'badge-ultra'
-  if (plan === 'pro') return 'badge-pro'
   return 'badge-gratis'
 }
 
@@ -387,11 +386,7 @@ const deleteUser = (user) => {
   color: var(--cc-text-muted);
   border: 1px solid var(--cc-border);
 }
-.badge-pro {
-  background: rgba(79, 211, 168, 0.15);
-  color: #4fd3a8;
-  border: 1px solid rgba(79, 211, 168, 0.3);
-}
+
 .badge-ultra {
   background: rgba(168, 85, 247, 0.15);
   color: #a855f7;

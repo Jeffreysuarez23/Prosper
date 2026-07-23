@@ -47,9 +47,7 @@ class ObjetivoController extends Controller
             return response()->json(['message' => 'Límite alcanzado: El plan Gratis permite máximo 1 objetivo.'], 403);
         }
 
-        if ($plan === 'pro' && $count >= 4) {
-            return response()->json(['message' => 'Límite alcanzado: El plan Pro permite máximo 4 objetivos.'], 403);
-        }
+
 
         $objetivo = DB::transaction(function () use ($validated, $user) {
             $objetivo = $user->objetivos()->create($validated);

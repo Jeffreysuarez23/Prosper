@@ -6,7 +6,6 @@ import VueApexCharts from 'vue3-apexcharts'
 const stats = ref({
   total_users: 0,
   gratis_users: 0,
-  pro_users: 0,
   ultra_users: 0,
   total_movimientos: 0
 })
@@ -19,21 +18,21 @@ const chartOptions = ref({
     background: 'transparent',
     foreColor: 'var(--cc-text)'
   },
-  labels: ['Gratis', 'Pro', 'Ultra'],
-  colors: ['#64748b', '#4fd3a8', '#a855f7'],
+  labels: ['Gratis', 'Ultra'],
+  colors: ['#64748b', '#a855f7'],
   stroke: { show: false },
   dataLabels: { enabled: false },
   legend: { position: 'bottom' },
   theme: { mode: localStorage.getItem('prosper-theme') || 'dark' }
 })
 
-const chartSeries = ref([0, 0, 0])
+const chartSeries = ref([0, 0])
 
 onMounted(async () => {
   try {
     const res = await api.get('/admin/stats')
     stats.value = res.data
-    chartSeries.value = [res.data.gratis_users, res.data.pro_users, res.data.ultra_users]
+    chartSeries.value = [res.data.gratis_users, res.data.ultra_users]
   } catch (error) {
     console.error(error)
   } finally {
@@ -101,16 +100,13 @@ onMounted(async () => {
           <h3>Estado de la Plataforma</h3>
           <div style="padding: 20px; color: var(--cc-text-muted); line-height: 1.6;">
             <p><strong>Privacidad activada:</strong> Los montos y descripciones de las transacciones están encriptados o bloqueados por seguridad.</p>
-            <p style="margin-top: 12px;">Actualmente la plataforma cuenta con <strong>{{ stats.total_users }}</strong> usuarios, de los cuales el <strong>{{ stats.total_users > 0 ? Math.round(((stats.pro_users + stats.ultra_users) / stats.total_users) * 100) : 0 }}%</strong> tienen una suscripción activa.</p>
+            <p style="margin-top: 12px;">Actualmente la plataforma cuenta con <strong>{{ stats.total_users }}</strong> usuarios, de los cuales el <strong>{{ stats.total_users > 0 ? Math.round((stats.ultra_users / stats.total_users) * 100) : 0 }}%</strong> tienen una suscripción activa.</p>
             <div style="margin-top: 24px; display: flex; gap: 16px;">
               <div style="flex: 1; padding: 16px; background: var(--cc-surface); border-radius: 12px; text-align: center;">
                 <h4 style="color: #64748b; font-size: 1.5rem; margin-bottom: 4px;">{{ stats.gratis_users }}</h4>
                 <span style="font-size: 0.8rem;">Usuarios Gratis</span>
               </div>
-              <div style="flex: 1; padding: 16px; background: var(--cc-surface); border-radius: 12px; text-align: center;">
-                <h4 style="color: #4fd3a8; font-size: 1.5rem; margin-bottom: 4px;">{{ stats.pro_users }}</h4>
-                <span style="font-size: 0.8rem;">Usuarios Pro</span>
-              </div>
+
               <div style="flex: 1; padding: 16px; background: var(--cc-surface); border-radius: 12px; text-align: center;">
                 <h4 style="color: #a855f7; font-size: 1.5rem; margin-bottom: 4px;">{{ stats.ultra_users }}</h4>
                 <span style="font-size: 0.8rem;">Usuarios Ultra</span>
