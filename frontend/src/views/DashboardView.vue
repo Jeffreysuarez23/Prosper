@@ -152,7 +152,7 @@ const chartOptions = {
       <article class="card card-chart" @click="navigateToStats" style="cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'" title="Ver estadísticas detalladas">
         <div class="card-head" style="display: flex; justify-content: space-between; align-items: center;">
           <h2 style="margin: 0;">Ingresos vs Gastos {{ currentYear }}</h2>
-          <span v-if="userPlan === 'gratis'" style="font-size: 0.7rem; font-weight: bold; padding: 2px 8px; border-radius: 12px; background: rgba(255,255,255,0.1); color: var(--text-muted); letter-spacing: 0.5px;">PRO</span>
+          <span v-if="userPlan === 'gratis'" style="font-size: 0.7rem; font-weight: bold; padding: 2px 8px; border-radius: 12px; background: rgba(255,255,255,0.1); color: var(--text-muted); letter-spacing: 0.5px;">ULTRA</span>
         </div>
         <div class="chart-wrap" id="chartDashTrend" style="height: 250px; position: relative;">
           <template v-if="userPlan !== 'gratis'">
@@ -164,7 +164,7 @@ const chartOptions = {
                 <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
               <h3 style="font-size: 1rem; margin-bottom: 8px; color: var(--text);">Estadísticas Bloqueadas</h3>
-              <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; max-width: 80%; margin-bottom: 16px;">Sube a un plan Pro o Ultra para desbloquear el análisis visual de tus finanzas.</p>
+              <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; max-width: 80%; margin-bottom: 16px;">Sube al plan Ultra para desbloquear el análisis visual de tus finanzas.</p>
               <button @click="openMembershipModal" class="btn-accent" style="padding: 6px 16px; font-size: 0.85rem;">Ver Membresías</button>
             </div>
             <!-- Obfuscated background chart with dummy data -->

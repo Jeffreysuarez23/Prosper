@@ -18,7 +18,7 @@ const userBillingCycle = computed(() => user.value.membresia?.billing_cycle || '
 const membershipEndsAt = computed(() => user.value.membresia?.ends_at ? new Date(user.value.membresia.ends_at).toLocaleDateString() : '')
 
 const handleNavClick = (e, featureLevel) => {
-  if (featureLevel === 'pro' && userPlan.value === 'gratis') {
+  if (featureLevel === 'ultra' && userPlan.value === 'gratis') {
     e.preventDefault()
     showMembershipModal.value = true
   }
@@ -268,9 +268,7 @@ const checkoutPrice = ref('')
 const openCheckout = (planName) => {
   checkoutPlan.value = planName
   
-  if (planName === 'pro') {
-    checkoutPrice.value = billingCycle.value === 'annual' ? '$149.000 COP' : '$14.900 COP'
-  } else if (planName === 'ultra') {
+  if (planName === 'ultra') {
     checkoutPrice.value = billingCycle.value === 'annual' ? '$249.000 COP' : '$24.900 COP'
   }
 
@@ -441,7 +439,7 @@ const renderPayPalButtons = async () => {
         </div>
         <button @click="showMembershipModal = true"
           style="font-size: 0.65rem; text-transform: uppercase; font-weight: bold; padding: 4px 12px; border-radius: 12px; letter-spacing: 1px; cursor: pointer; transition: transform 0.2s, filter 0.2s; margin-top: 2px;"
-          :style="userPlan === 'ultra' ? 'background: linear-gradient(45deg, #a855f7, #ec4899); color: white; border: none; box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);' : (userPlan === 'pro' ? 'background: rgba(79, 211, 168, 0.15); color: var(--accent); border: 1px solid var(--accent); box-shadow: 0 0 10px rgba(79, 211, 168, 0.2);' : 'background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border);')"
+          :style="userPlan === 'ultra' ? 'background: linear-gradient(45deg, #a855f7, #ec4899); color: white; border: none; box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);' : 'background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border);'"
           onmouseover="this.style.transform='scale(1.05)'; this.style.filter='brightness(1.1)'" onmouseout="this.style.transform='scale(1)'; this.style.filter='brightness(1)'">
           Plan {{ userPlan }}
         </button>
@@ -461,7 +459,7 @@ const renderPayPalButtons = async () => {
           </svg>
           <span>Movimientos</span>
         </RouterLink>
-        <RouterLink class="nav-item" to="/estadisticas" active-class="is-active" :class="{ 'is-disabled': userPlan === 'gratis' }" @click="handleNavClick($event, 'pro')">
+        <RouterLink class="nav-item" to="/estadisticas" active-class="is-active" :class="{ 'is-disabled': userPlan === 'gratis' }" @click="handleNavClick($event, 'ultra')">
           <svg class="nav-icon" viewBox="0 0 24 24">
             <path d="M5 20V10M12 20V4M19 20v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
           </svg>
@@ -475,7 +473,7 @@ const renderPayPalButtons = async () => {
           </svg>
           <span>Objetivos</span>
         </RouterLink>
-        <RouterLink class="nav-item" to="/gastos-fijos" active-class="is-active" :class="{ 'is-disabled': userPlan === 'gratis' }" @click="handleNavClick($event, 'pro')">
+        <RouterLink class="nav-item" to="/gastos-fijos" active-class="is-active" :class="{ 'is-disabled': userPlan === 'gratis' }" @click="handleNavClick($event, 'ultra')">
           <svg class="nav-icon" viewBox="0 0 24 24">
             <rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8" />
             <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="1.8" />
@@ -483,7 +481,7 @@ const renderPayPalButtons = async () => {
           </svg>
           <span>Gastos Fijos</span>
         </RouterLink>
-        <RouterLink class="nav-item" to="/tarjetas-credito" active-class="is-active" :class="{ 'is-disabled': userPlan === 'gratis' }" @click="handleNavClick($event, 'pro')">
+        <RouterLink class="nav-item" to="/tarjetas-credito" active-class="is-active" :class="{ 'is-disabled': userPlan === 'gratis' }" @click="handleNavClick($event, 'ultra')">
           <svg class="nav-icon" viewBox="0 0 24 24">
             <rect x="2" y="5" width="20" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.8" />
             <path d="M2 10h20" stroke="currentColor" stroke-width="1.8" />
@@ -492,7 +490,7 @@ const renderPayPalButtons = async () => {
           </svg>
           <span>Tarjetas de credito</span>
         </RouterLink>
-        <RouterLink class="nav-item" to="/notificaciones" active-class="is-active" :class="{ 'is-disabled': userPlan === 'gratis' }" @click="handleNavClick($event, 'pro')">
+        <RouterLink class="nav-item" to="/notificaciones" active-class="is-active" :class="{ 'is-disabled': userPlan === 'gratis' }" @click="handleNavClick($event, 'ultra')">
           <svg class="nav-icon" viewBox="0 0 24 24">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -735,54 +733,7 @@ const renderPayPalButtons = async () => {
             </div>
           </div>
 
-          <!-- Plan Pro -->
-          <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid var(--accent); border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; position: relative;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-              <h3 style="font-size: 1.2rem; margin: 0; color: var(--accent);">Pro</h3>
-              <span v-if="userPlan === 'pro'" style="font-size: 0.75rem; color: var(--accent); background: rgba(79,211,168,0.1); border: 1px solid rgba(79,211,168,0.3); border-radius: 12px; padding: 0.2rem 0.6rem; font-weight: bold;">
-                Válido hasta: {{ membershipEndsAt }}
-              </span>
-            </div>
-            <div style="margin-bottom: 1.5rem;">
-              <p style="font-size: 1.8rem; font-weight: bold; color: var(--text); margin-bottom: 0;">{{ billingCycle === 'annual' ? '$149.000' : '$14.900' }}<span style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal;">/{{ billingCycle === 'annual' ? 'año' : 'mes' }}</span></p>
-              <p v-if="billingCycle === 'annual'" style="color: var(--accent); font-size: 0.8rem; margin-top: 2px; font-weight: bold; margin-bottom: 0;">Ahorras $29.800</p>
-            </div>
-            <ul style="list-style: none; padding: 0; margin: 0 0 1rem 0; flex-grow: 1; color: var(--text-muted); font-size: 0.85rem;">
-              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
-                <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--accent); flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <span><b>Movimientos:</b> Ilimitados.</span>
-              </li>
-              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
-                <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--accent); flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <span style="color: var(--text);"><b>Estadísticas detalladas</b></span>
-              </li>
-              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
-                <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--accent); flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <span style="color: var(--text);"><b>Gastos Fijos:</b> Ilimitados.</span>
-              </li>
-              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
-                <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--accent); flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <span style="color: var(--text);"><b>Tarjetas de Crédito:</b> Máximo 1.</span>
-              </li>
-              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
-                <svg viewBox="0 0 24 24" width="14" height="14" style="color: var(--accent); flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <span style="color: var(--text);"><b>Notificaciones:</b> Completas.</span>
-              </li>
-            </ul>
-            <button v-if="userPlan === 'pro' && userBillingCycle === 'monthly' && billingCycle === 'annual'" @click="openCheckout('pro')" style="width: 100%; font-weight: bold; background: linear-gradient(45deg, #2563eb, #38bdf8); color: white; border: none; padding: 0.6rem; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4); transition: filter 0.3s ease, transform 0.2s ease;" onmouseover="this.style.filter='brightness(1.1)'; this.style.transform='scale(1.02)'" onmouseout="this.style.filter='brightness(1)'; this.style.transform='scale(1)'">
-              Mejorar a Anual
-            </button>
-            <button v-else-if="userPlan === 'pro' && userBillingCycle === 'annual' && billingCycle === 'monthly'" @click="openCheckout('pro')" class="btn-ghost" style="width: 100%; border: 1px solid var(--border); padding: 0.6rem; color: var(--text); font-weight: 500; transition: all 0.2s ease; border-radius: 8px;" onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text)'">
-              Cambiar a Mensual
-            </button>
-            <button v-else-if="userPlan === 'pro'" class="btn-ghost" style="width: 100%; border: 1px solid var(--border); padding: 0.6rem;" disabled>Plan Actual</button>
-            <button v-else-if="userPlan === 'ultra'" @click="openCheckout('pro')" class="btn-ghost" style="width: 100%; border: 1px solid var(--border); padding: 0.6rem; color: var(--text-muted); font-weight: 500; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--text-muted)'; this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'">
-              Bajar a Pro
-            </button>
-            <button v-else @click="openCheckout('pro')" class="btn-accent" style="width: 100%; padding: 0.6rem; font-weight: bold; box-shadow: 0 4px 14px rgba(79, 211, 168, 0.4); transition: transform 0.2s ease;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-              Elegir Pro
-            </button>
-          </div>
+
 
           <!-- Plan Ultra -->
           <div class="membership-card" style="background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(168, 85, 247, 0.25) 100%); border: 2px solid #a855f7; border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; transform: scale(1.05); box-shadow: 0 15px 35px rgba(168, 85, 247, 0.25); z-index: 1; position: relative; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='scale(1.08)'; this.style.boxShadow='0 20px 40px rgba(168, 85, 247, 0.35)'" onmouseout="this.style.transform='scale(1.05)'; this.style.boxShadow='0 15px 35px rgba(168, 85, 247, 0.25)'">
@@ -820,10 +771,7 @@ const renderPayPalButtons = async () => {
                 <svg viewBox="0 0 24 24" width="14" height="14" style="color: #a855f7; flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <span><b>Gastos Fijos:</b> Ilimitados.</span>
               </li>
-              <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
-                <svg viewBox="0 0 24 24" width="14" height="14" style="color: #a855f7; flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <span style="color: var(--text);"><b>Todas las características Pro</b></span>
-              </li>
+
               <li style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 6px;">
                 <svg viewBox="0 0 24 24" width="14" height="14" style="color: #a855f7; flex-shrink: 0; margin-top: 2px;"><path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <span style="color: var(--text);"><b>Acceso a futuras funciones en beta</b></span>
@@ -839,7 +787,7 @@ const renderPayPalButtons = async () => {
               <button v-else class="btn-ghost" style="width: 100%; border: 1px solid var(--border); padding: 0.6rem; position: relative; z-index: 2;" disabled>Plan Actual</button>
             </div>
             <button v-else @click="openCheckout('ultra')" style="width: 100%; font-weight: bold; background: linear-gradient(45deg, #a855f7, #ec4899); color: white; border: none; padding: 0.6rem; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4); transition: filter 0.3s ease, transform 0.2s ease; position: relative; z-index: 2;" onmouseover="this.style.filter='brightness(1.1)'; this.style.transform='scale(1.02)'" onmouseout="this.style.filter='brightness(1)'; this.style.transform='scale(1)'">
-              {{ userPlan === 'pro' ? 'Mejorar a Ultra' : 'Elegir Ultra' }}
+              Elegir Ultra
             </button>
           </div>
 

@@ -55,7 +55,7 @@ class PayPalController extends Controller
     public function createOrder(Request $request)
     {
         $request->validate([
-            'plan' => 'required|in:pro,ultra',
+            'plan' => 'required|in:ultra',
             'billing_cycle' => 'required|in:monthly,annual',
         ]);
 
@@ -64,10 +64,6 @@ class PayPalController extends Controller
 
         // Prices in USD (since COP is not officially supported for direct checkout)
         $prices = [
-            'pro' => [
-                'monthly' => '3.99',
-                'annual' => '39.99'
-            ],
             'ultra' => [
                 'monthly' => '6.99',
                 'annual' => '69.99'
@@ -110,7 +106,7 @@ class PayPalController extends Controller
     {
         $request->validate([
             'orderID' => 'required|string',
-            'plan' => 'required|in:pro,ultra',
+            'plan' => 'required|in:ultra',
             'billing_cycle' => 'required|in:monthly,annual',
         ]);
 
@@ -131,7 +127,6 @@ class PayPalController extends Controller
 
                 // Prices in USD
                 $prices = [
-                    'pro' => ['monthly' => '3.99', 'annual' => '39.99'],
                     'ultra' => ['monthly' => '6.99', 'annual' => '69.99']
                 ];
                 $expectedPrice = $prices[$plan][$cycle];

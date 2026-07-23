@@ -49,9 +49,7 @@ class TarjetaCreditoController extends Controller
             return response()->json(['message' => 'El plan Gratis no incluye Tarjetas de Crédito.'], 403);
         }
 
-        if ($plan === 'pro' && $tarjetasCount >= 1) {
-            return response()->json(['message' => 'Límite de 1 tarjeta de crédito alcanzado para el plan Pro.'], 403);
-        }
+
 
         $tarjeta = $user->tarjetaCreditos()->create($validated);
 
