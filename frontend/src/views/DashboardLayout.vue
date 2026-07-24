@@ -670,7 +670,7 @@ const renderPayPalButtons = async () => {
           
           <div style="display: inline-block; margin-bottom: 0.5rem;">
             <h2 style="font-size: 1.8rem; margin-bottom: 0.25rem; background: -webkit-linear-gradient(45deg, var(--accent), #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Sube de nivel</h2>
-            <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Elige la membresía que mejor se adapte a tus necesidades financieras.</p>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Elige tu membresía.</p>
           </div>
 
           <!-- Billing Cycle Toggle -->
@@ -690,7 +690,7 @@ const renderPayPalButtons = async () => {
         </div>
 
         <!-- Cards -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; padding: 2.5rem 1.5rem 1.5rem 1.5rem; overflow-y: auto;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; padding: 2.5rem 1.5rem 1.5rem 1.5rem;">
           
           <!-- Plan Gratis -->
           <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column;">
