@@ -12,12 +12,6 @@ const refreshKey = ref(0) // Usado para recargar la vista hija sin recargar la p
 const showMembershipModal = ref(false)
 const billingCycle = ref('monthly')
 const isSidebarOpen = ref(false)
-const isSidebarCollapsed = ref(localStorage.getItem('sidebar_collapsed') === 'true')
-
-const toggleSidebarCollapse = () => {
-  isSidebarCollapsed.value = !isSidebarCollapsed.value
-  localStorage.setItem('sidebar_collapsed', isSidebarCollapsed.value)
-}
 
 const userPlan = computed(() => user.value.membresia?.plan || 'gratis')
 const userBillingCycle = computed(() => user.value.membresia?.billing_cycle || 'monthly')
@@ -429,12 +423,12 @@ const renderPayPalButtons = async () => {
 </script>
 
 <template>
-  <div class="app" :class="{ 'is-collapsed': isSidebarCollapsed }">
+  <div class="app">
     <div v-if="isSidebarOpen" class="sidebar-overlay" @click="isSidebarOpen = false" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; display: block; backdrop-filter: blur(2px);"></div>
     <!-- ============ SIDEBAR ============ -->
-    <aside class="sidebar" id="sidebar" :class="{ 'is-open': isSidebarOpen, 'is-collapsed': isSidebarCollapsed }">
-      <div class="brand" style="display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative;">
-        <div style="display: flex; align-items: center; gap: 12px; margin-top: 4px;">
+    <aside class="sidebar" id="sidebar" :class="{ 'is-open': isSidebarOpen }">
+      <div class="brand" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
           <span class="brand-mark" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="20" height="20">
               <path d="M4 18 L9 10 L13 14 L20 4" stroke="currentColor" stroke-width="2.4" fill="none"
@@ -511,12 +505,6 @@ const renderPayPalButtons = async () => {
         <button class="theme-circle" :class="{ 'is-active': currentTheme === 'blue' }" @click="setTheme('blue')" style="background: linear-gradient(to right, #141b2d 50%, #3b82f6 50%);" aria-label="Azul Oscuro"></button>
       </div>
     </aside>
-
-    <!-- Toggle Flag (outside sidebar so it stays visible when collapsed) -->
-    <button class="collapse-toggle-flag" :class="{ 'is-sidebar-collapsed': isSidebarCollapsed }" @click="toggleSidebarCollapse" :title="isSidebarCollapsed ? 'Expandir menú' : 'Colapsar menú'">
-      <svg v-if="!isSidebarCollapsed" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-      <svg v-else viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-    </button>
 
     <!-- ============ MAIN ============ -->
     <main class="main" @click="isSidebarOpen = false">
