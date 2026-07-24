@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('tarjetas:aplicar-intereses')->daily();
+Schedule::command('membresias:check-expired')->daily();
