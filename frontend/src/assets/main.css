@@ -83,7 +83,8 @@ a{ color:var(--accent); text-decoration:none; }
 /* ==========================================================
    LAYOUT
    ========================================================== */
-.app{ display:grid; grid-template-columns:240px 1fr; min-height:100vh; }
+.app{ display:grid; grid-template-columns:240px 1fr; min-height:100vh; transition: grid-template-columns 0.3s cubic-bezier(.4,0,.2,1); }
+.app.is-collapsed{ grid-template-columns: 76px 1fr; }
 
 /* ---------- Sidebar ---------- */
 .sidebar{
@@ -139,12 +140,29 @@ a{ color:var(--accent); text-decoration:none; }
 }
 .theme-circle:hover {
   transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 .theme-circle.is-active {
-  transform: scale(1.15);
-  border-color: var(--text);
-  box-shadow: 0 0 8px rgba(0,0,0,0.3);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
 }
+
+/* Collapsed Sidebar Styles */
+.sidebar.is-collapsed { padding: 24px 8px; }
+.sidebar.is-collapsed .brand-name { display: none; }
+.sidebar.is-collapsed .brand-btn { display: none; }
+.sidebar.is-collapsed .nav-item span { display: none; }
+.sidebar.is-collapsed .nav-item { justify-content: center; padding: 10px; }
+.sidebar.is-collapsed .sidebar-foot { flex-direction: column; align-items: center; gap: 16px; }
+
+.collapse-btn {
+  background: none; border: none; color: var(--text-muted); padding: 4px;
+  cursor: pointer; transition: color 0.2s, transform 0.2s;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.collapse-btn:hover { color: var(--text); background: var(--surface-2); }
+
 
 .hamburger{ display:none; background:none; border:none; color:var(--text); padding:4px; }
 

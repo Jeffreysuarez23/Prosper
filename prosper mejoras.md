@@ -22,7 +22,7 @@
 
 ~~12- Eliminar el plan pro, no cambia en nada con el ultra (QUEDA HACER PRUEBAS)~~
 
-13- cambiar mensaje en la membresia (elija su plan) y quitar el scroll en las membresías.
+~~13- cambiar mensaje en la membresia (elija su plan) y quitar el scroll en las membresías.~~
 
 14- analizar toda la session de membresias (que el cliente sepa de que se pierde si no paga)
 

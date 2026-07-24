@@ -12,6 +12,12 @@ const refreshKey = ref(0) // Usado para recargar la vista hija sin recargar la p
 const showMembershipModal = ref(false)
 const billingCycle = ref('monthly')
 const isSidebarOpen = ref(false)
+const isSidebarCollapsed = ref(localStorage.getItem('sidebar_collapsed') === 'true')
+
+const toggleSidebarCollapse = () => {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value
+  localStorage.setItem('sidebar_collapsed', isSidebarCollapsed.value)
+}
 
 const userPlan = computed(() => user.value.membresia?.plan || 'gratis')
 const userBillingCycle = computed(() => user.value.membresia?.billing_cycle || 'monthly')
@@ -423,12 +429,16 @@ const renderPayPalButtons = async () => {
 </script>
 
 <template>
-  <div class="app">
+  <div class="app" :class="{ 'is-collapsed': isSidebarCollapsed }">
     <div v-if="isSidebarOpen" class="sidebar-overlay" @click="isSidebarOpen = false" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; display: block; backdrop-filter: blur(2px);"></div>
     <!-- ============ SIDEBAR ============ -->
-    <aside class="sidebar" id="sidebar" :class="{ 'is-open': isSidebarOpen }">
-      <div class="brand" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
+    <aside class="sidebar" id="sidebar" :class="{ 'is-open': isSidebarOpen, 'is-collapsed': isSidebarCollapsed }">
+      <div class="brand" style="display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative;">
+        <button class="collapse-btn" @click="toggleSidebarCollapse" style="position: absolute; right: 0; top: 0;" :title="isSidebarCollapsed ? 'Expandir menú' : 'Colapsar menú'">
+          <svg v-if="!isSidebarCollapsed" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          <svg v-else viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+        <div style="display: flex; align-items: center; gap: 12px; margin-top: 4px;">
           <span class="brand-mark" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="20" height="20">
               <path d="M4 18 L9 10 L13 14 L20 4" stroke="currentColor" stroke-width="2.4" fill="none"
