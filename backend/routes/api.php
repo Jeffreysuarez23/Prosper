@@ -10,6 +10,7 @@ use App\Http\Controllers\GastoFijoController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\TarjetaCreditoController;
 use App\Http\Controllers\PayPalController;
+use App\Http\Controllers\PayPalWebhookController;
 
 Route::middleware('throttle:5,1')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
@@ -46,8 +47,12 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // PayPal Routes
     Route::get('/paypal/client-id', [PayPalController::class, 'getClientId']);
-    Route::post('/paypal/create-order', [PayPalController::class, 'createOrder']);
-    Route::post('/paypal/capture-order', [PayPalController::class, 'captureOrder']);
+    
+    // Strict Rate Limiting for checkout actions to prevent spam/abuse
+    Route::middleware('throttle:3,1')->group(function () {
+        Route::post('/paypal/create-order', [PayPalController::class, 'createOrder']);
+        Route::post('/paypal/capture-order', [PayPalController::class, 'captureOrder']);
+    });
 
     // Admin Routes
     Route::middleware([\App\Http\Middleware\IsAdmin::class])->group(function () {
@@ -59,6 +64,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/users/{id}/audit', [\App\Http\Controllers\AdminController::class, 'auditUser']);
     });
 });
+
+// Public Webhook route (No auth required, PayPal will send POST requests here)
+Route::post('/paypal/webhook', [PayPalWebhookController::class, 'handle']);
 
 
 
