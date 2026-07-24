@@ -53,6 +53,7 @@ const handleUpdateProfile = async () => {
     userData.name = res.data.user.name
     userData.telefono = res.data.user.telefono
     localStorage.setItem('user', JSON.stringify(userData))
+    window.dispatchEvent(new CustomEvent('user-updated'))
     
     Swal.fire({
       toast: true,

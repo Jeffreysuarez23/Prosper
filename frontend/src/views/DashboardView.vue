@@ -8,6 +8,10 @@ const router = useRouter()
 const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
 const userPlan = computed(() => user.value.membresia?.plan || 'gratis')
 
+window.addEventListener('user-updated', () => {
+  user.value = JSON.parse(localStorage.getItem('user') || '{}')
+})
+
 const openMembershipModal = () => {
   window.dispatchEvent(new CustomEvent('open-membership-modal'))
 }
