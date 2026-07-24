@@ -192,9 +192,9 @@ a{ color:var(--accent); text-decoration:none; }
 
 /* ---------- Main ---------- */
 .main{
-  padding:28px 32px 60px; min-width:0;
-  flex: 1;
-  width: 0; /* forces flex item to respect flex:1 */
+  padding:28px 32px 60px;
+  min-width:0;
+  flex: 1 1 0%;
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -842,13 +842,15 @@ html[data-theme="dark"] .sc-expense .sc-icon{ background:rgba(248,113,113,.12); 
 
 /* ── Tablet & Small Desktop (≤920px) ── */
 @media (max-width:920px){
-  .app{ grid-template-columns:1fr; }
   .sidebar{
     position:fixed; left:0; top:0; bottom:0; width:260px;
     transform:translateX(-100%); z-index:50;
     box-shadow: 4px 0 24px rgba(0,0,0,.3);
+    min-width: 260px;
   }
   .sidebar.is-open{ transform:translateX(0); }
+  .sidebar.is-collapsed{ width:260px; min-width:260px; opacity:1; padding:24px 16px; }
+  .collapse-toggle-flag{ display:none; }
   .hamburger{ display:grid; }
   .main{ padding:20px 16px 96px; }
   .grid-2{ grid-template-columns:1fr; }
