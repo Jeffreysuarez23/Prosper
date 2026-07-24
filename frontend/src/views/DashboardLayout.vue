@@ -660,7 +660,7 @@ const renderPayPalButtons = async () => {
     </div>
     <!-- ============ MODAL: MEMBRESÍAS ============ -->
     <div class="modal" :class="{ 'is-active': showMembershipModal }">
-      <div class="modal-content" style="max-width: 900px; padding: 0; position: relative;">
+      <div class="modal-content" style="max-width: 900px; padding: 0; position: relative; max-height: 95vh; overflow: hidden;">
         
         <!-- Header -->
         <div style="padding: 1.5rem 1.5rem 0.5rem 1.5rem; text-align: center; position: relative;">
