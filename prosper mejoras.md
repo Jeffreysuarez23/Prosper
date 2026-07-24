@@ -22,7 +22,7 @@
 
 ~~12- Eliminar el plan pro, no cambia en nada con el ultra (QUEDA HACER PRUEBAS)~~
 
-13- cambiar mensaje en la membresia (elija su plan)
+13- cambiar mensaje en la membresia (elija su plan) y quitar el scroll en las membresías.
 
 14- analizar toda la session de membresias (que el cliente sepa de que se pierde si no paga)
 
@@ -35,4 +35,5 @@
 18- Sen configuración quitar los tres colores y poner configuración. en configuración habrá: colores editables, es decir el usuario edita la pagina visualmente, poder cambiar el tipo de moneda y poner cambiar el idioma.
 
 19- Notificaciones para saber que compraste una membresia, y recordatorio 3-5 días antes de que finalice la membresia para que el usuario sepa.
+~~20- Seguridad maxima a las membresías y se creo una nueva tabla historial\_pagos para saber exactamente cuadno y cuanto pago un usuario.~~
 
