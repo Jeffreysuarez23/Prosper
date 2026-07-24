@@ -18,6 +18,10 @@ class AdminController extends Controller
         // Get count of users by plan (active)
         $usersByPlan = DB::table('membresias')
             ->where('status', 'active')
+            ->where(function ($query) {
+                $query->whereNull('ends_at')
+                      ->orWhere('ends_at', '>=', now());
+            })
             ->select('plan', DB::raw('count(*) as total'))
             ->groupBy('plan')
             ->pluck('total', 'plan')->toArray();
