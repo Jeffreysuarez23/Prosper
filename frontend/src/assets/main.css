@@ -83,19 +83,15 @@ a{ color:var(--accent); text-decoration:none; }
 /* ==========================================================
    LAYOUT
    ========================================================== */
-.app{ display:flex; min-height:100vh; overflow-x: hidden; }
+.app{ display:grid; grid-template-columns:240px 1fr; min-height:100vh; }
 
+/* ---------- Sidebar ---------- */
 .sidebar{
   background:var(--sidebar-bg); color:var(--sidebar-text);
   padding:24px 16px; display:flex; flex-direction:column;
   position:sticky; top:0; height:100vh; z-index:30;
   border-right: 1px solid var(--border);
-  width: 240px; min-width: 240px; flex-shrink: 0;
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-              min-width 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-              padding 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 0.3s ease;
-  overflow: hidden;
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
 }
 .brand{ display:flex; align-items:center; gap:10px; padding:0 8px 28px; color:var(--text); }
 .brand-mark{
@@ -143,60 +139,17 @@ a{ color:var(--accent); text-decoration:none; }
 }
 .theme-circle:hover {
   transform: scale(1.1);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 .theme-circle.is-active {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  transform: scale(1.15);
+  border-color: var(--text);
+  box-shadow: 0 0 8px rgba(0,0,0,0.3);
 }
-
-/* Collapsed Sidebar Styles */
-.sidebar.is-collapsed {
-  width: 0; min-width: 0;
-  padding: 24px 0;
-  border-right: none;
-  opacity: 0;
-}
-
-.collapse-toggle-flag {
-  position: fixed;
-  top: 24px;
-  left: 240px; /* aligned to sidebar edge */
-  width: 28px;
-  height: 48px;
-  background: var(--sidebar-bg);
-  border: 1px solid var(--border);
-  border-left: none;
-  border-radius: 0 8px 8px 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--text-muted);
-  z-index: 50;
-  box-shadow: 4px 0 12px rgba(0,0,0,0.15);
-  transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-              color 0.2s, background 0.2s;
-  padding: 0;
-}
-.collapse-toggle-flag.is-sidebar-collapsed {
-  left: 0;
-}
-.collapse-toggle-flag:hover {
-  color: var(--accent);
-  background: var(--surface-2);
-}
-
 
 .hamburger{ display:none; background:none; border:none; color:var(--text); padding:4px; }
 
 /* ---------- Main ---------- */
-.main{
-  padding:28px 32px 60px;
-  min-width:0;
-  flex: 1 1 0%;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
+.main{ padding:28px 32px 60px; min-width:0; }
 
 .topbar{
   display:flex; align-items:center; justify-content:space-between;
@@ -842,15 +795,13 @@ html[data-theme="dark"] .sc-expense .sc-icon{ background:rgba(248,113,113,.12); 
 
 /* ── Tablet & Small Desktop (≤920px) ── */
 @media (max-width:920px){
+  .app{ grid-template-columns:1fr; }
   .sidebar{
     position:fixed; left:0; top:0; bottom:0; width:260px;
     transform:translateX(-100%); z-index:50;
     box-shadow: 4px 0 24px rgba(0,0,0,.3);
-    min-width: 260px;
   }
   .sidebar.is-open{ transform:translateX(0); }
-  .sidebar.is-collapsed{ width:260px; min-width:260px; opacity:1; padding:24px 16px; }
-  .collapse-toggle-flag{ display:none; }
   .hamburger{ display:grid; }
   .main{ padding:20px 16px 96px; }
   .grid-2{ grid-template-columns:1fr; }
