@@ -82,7 +82,12 @@ class User extends Authenticatable
 
     public function membresia()
     {
-        return $this->hasOne(Membresia::class)->whereIn('status', ['active']);
+        return $this->hasOne(Membresia::class)
+            ->whereIn('status', ['active'])
+            ->where(function ($query) {
+                $query->whereNull('ends_at')
+                      ->orWhere('ends_at', '>=', now());
+            });
     }
 
     public function getPlanAttribute()
