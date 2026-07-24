@@ -84,7 +84,7 @@ a{ color:var(--accent); text-decoration:none; }
    LAYOUT
    ========================================================== */
 .app{ display:grid; grid-template-columns:240px 1fr; min-height:100vh; transition: grid-template-columns 0.3s cubic-bezier(.4,0,.2,1); }
-.app.is-collapsed{ grid-template-columns: 76px 1fr; }
+.app.is-collapsed{ grid-template-columns: 0px 1fr; }
 
 /* ---------- Sidebar ---------- */
 .sidebar{
@@ -93,6 +93,7 @@ a{ color:var(--accent); text-decoration:none; }
   position:sticky; top:0; height:100vh; z-index:30;
   border-right: 1px solid var(--border);
   transition:transform .3s cubic-bezier(.4,0,.2,1);
+  width: 240px; /* Force width */
 }
 .brand{ display:flex; align-items:center; gap:10px; padding:0 8px 28px; color:var(--text); }
 .brand-mark{
@@ -148,20 +149,31 @@ a{ color:var(--accent); text-decoration:none; }
 }
 
 /* Collapsed Sidebar Styles */
-.sidebar.is-collapsed { padding: 24px 8px; }
-.sidebar.is-collapsed .brand-name { display: none; }
-.sidebar.is-collapsed .brand-btn { display: none; }
-.sidebar.is-collapsed .nav-item span { display: none; }
-.sidebar.is-collapsed .nav-item { justify-content: center; padding: 10px; }
-.sidebar.is-collapsed .sidebar-foot { flex-direction: column; align-items: center; gap: 16px; }
+.sidebar.is-collapsed { transform: translateX(-100%); }
 
-.collapse-btn {
-  background: none; border: none; color: var(--text-muted); padding: 4px;
-  cursor: pointer; transition: color 0.2s, transform 0.2s;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
+.collapse-toggle-flag {
+  position: absolute;
+  top: 24px;
+  right: -32px; /* Sticks out to the right */
+  width: 32px;
+  height: 48px;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border);
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  z-index: 50;
+  box-shadow: 4px 0 12px rgba(0,0,0,0.1);
+  transition: color 0.2s, background 0.2s, right 0.3s cubic-bezier(.4,0,.2,1);
 }
-.collapse-btn:hover { color: var(--text); background: var(--surface-2); }
+.collapse-toggle-flag:hover {
+  color: var(--accent);
+  background: var(--surface-2);
+}
 
 
 .hamburger{ display:none; background:none; border:none; color:var(--text); padding:4px; }
