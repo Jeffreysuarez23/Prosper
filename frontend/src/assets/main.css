@@ -83,8 +83,8 @@ a{ color:var(--accent); text-decoration:none; }
 /* ==========================================================
    LAYOUT
    ========================================================== */
-.app{ display:grid; grid-template-columns:240px 1fr; min-height:100vh; transition: grid-template-columns 0.3s cubic-bezier(.4,0,.2,1); }
-.app.is-collapsed{ grid-template-columns: 0px 1fr; }
+.app{ display:flex; min-height:100vh; }
+/* Removed grid-template-columns */
 
 /* ---------- Sidebar ---------- */
 .sidebar{
@@ -92,8 +92,8 @@ a{ color:var(--accent); text-decoration:none; }
   padding:24px 16px; display:flex; flex-direction:column;
   position:sticky; top:0; height:100vh; z-index:30;
   border-right: 1px solid var(--border);
-  transition:transform .3s cubic-bezier(.4,0,.2,1);
-  width: 240px; /* Force width */
+  transition: margin-left 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 240px; flex-shrink: 0; /* Force width */
 }
 .brand{ display:flex; align-items:center; gap:10px; padding:0 8px 28px; color:var(--text); }
 .brand-mark{
@@ -149,7 +149,7 @@ a{ color:var(--accent); text-decoration:none; }
 }
 
 /* Collapsed Sidebar Styles */
-.sidebar.is-collapsed { transform: translateX(-100%); }
+.sidebar.is-collapsed { margin-left: -240px; }
 
 .collapse-toggle-flag {
   position: absolute;
@@ -179,7 +179,7 @@ a{ color:var(--accent); text-decoration:none; }
 .hamburger{ display:none; background:none; border:none; color:var(--text); padding:4px; }
 
 /* ---------- Main ---------- */
-.main{ padding:28px 32px 60px; min-width:0; }
+.main{ padding:28px 32px 60px; min-width:0; flex: 1; transition: padding 0.5s ease; }
 
 .topbar{
   display:flex; align-items:center; justify-content:space-between;
