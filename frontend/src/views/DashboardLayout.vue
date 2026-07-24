@@ -620,7 +620,6 @@ const renderPayPalButtons = async () => {
             <select class="form-control" v-model="txData.categoria" required>
               <optgroup label="Ingreso" v-if="txData.tipo === 'ingreso'">
                 <option value="Salario">💼 Salario</option>
-                <option value="Freelance">💻 Freelance</option>
                 <option value="Inversiones">📈 Inversiones</option>
                 <option value="Ventas">🛒 Ventas</option>
                 <option value="Regalos">🎁 Regalos</option>

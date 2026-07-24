@@ -98,7 +98,7 @@ const formatCurrency = (val) => {
 
 const getCategoryIcon = (cat) => {
   const icons = {
-    'Salario':'💼','Freelance':'💻','Inversiones':'📈','Ventas':'🛒','Regalos':'🎁',
+    'Salario':'💼','Inversiones':'📈','Ventas':'🛒','Regalos':'🎁',
     'Comida':'🍔','Transporte':'🚗','Vivienda':'🏠','Servicios':'⚡','Salud':'🏥','Ocio':'🎮','Educación':'📚','Ropa':'👕',
     'Fondo de emergencia':'🛡️','Inversión':'📊','Meta específica':'🎯','Ahorro general':'💰',
     'Entre cuentas':'🔄','A terceros':'👤','Pago de deuda':'💳','Otros':'📎'
@@ -220,7 +220,6 @@ const setPage = (p) => {
         <option value="">Todas las categorías</option>
         <optgroup label="Ingresos">
           <option value="Salario">💼 Salario</option>
-          <option value="Freelance">💻 Freelance</option>
           <option value="Inversiones">📈 Inversiones</option>
           <option value="Ventas">🛒 Ventas</option>
           <option value="Regalos">🎁 Regalos</option>
