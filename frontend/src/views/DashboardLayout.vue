@@ -66,6 +66,7 @@ const txData = ref({
   monto: '',
   fecha: new Date().toISOString().split('T')[0],
   categoria: 'Salario',
+  categoria_otro: '',
   descripcion: '',
   metodo_pago: 'efectivo',
   metodo_pago_otro: ''
@@ -165,6 +166,9 @@ const handleSaveTx = async () => {
     if (payload.metodo_pago === 'otro' && payload.metodo_pago_otro) {
       payload.metodo_pago = payload.metodo_pago_otro
     }
+    if (payload.categoria === 'Otros' && payload.categoria_otro) {
+      payload.categoria = payload.categoria_otro
+    }
     
     if (txEditId.value) {
       await api.put(`/movimientos/${txEditId.value}`, payload)
@@ -178,6 +182,7 @@ const handleSaveTx = async () => {
       monto: '',
       fecha: new Date().toISOString().split('T')[0],
       categoria: 'Salario',
+      categoria_otro: '',
       descripcion: '',
       metodo_pago: 'efectivo',
       metodo_pago_otro: ''
@@ -637,6 +642,7 @@ const renderPayPalButtons = async () => {
                 <option value="Otros">📎 Otros</option>
               </optgroup>
             </select>
+            <input type="text" class="form-control" v-model="txData.categoria_otro" v-if="txData.categoria === 'Otros'" style="margin-top:8px;" placeholder="Especificar categoría...">
           </div>
           <div class="form-group">
             <label>Descripción</label>
