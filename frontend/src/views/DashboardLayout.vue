@@ -249,6 +249,7 @@ onMounted(async () => {
     const userRes = await api.get('/user')
     user.value = userRes.data
     localStorage.setItem('user', JSON.stringify(userRes.data))
+    window.dispatchEvent(new CustomEvent('user-updated'))
   } catch (error) {
     console.error('Error fetching user data:', error)
   }
@@ -381,6 +382,7 @@ const renderPayPalButtons = async () => {
                 const userRes = await api.get('/user')
                 user.value = userRes.data
                 localStorage.setItem('user', JSON.stringify(userRes.data))
+                window.dispatchEvent(new CustomEvent('user-updated'))
                 refreshKey.value++
               })
             
