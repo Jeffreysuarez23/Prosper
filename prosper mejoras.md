@@ -26,11 +26,13 @@
 
 14- analizar toda la session de membresias (que el cliente sepa de que se pierde si no paga)
 
-15- en la base de datos cuando yo edito la fecha de finalizacion de un plan a un mes anterior me sigue apareciendo que el plan es el que tenia es decir no se me vencio el plan pasado el mes.
+~~15- en la base de datos cuando yo edito la fecha de finalizacion de un plan a un mes anterior, es decir para que ya hoy este plan  este vencido. me sigue apareciendo que el plan es el que tenia es decir no se me vencio el plan pasado el mes.~~
 
 16- Hacer que el menu izquierdo se pueda ocultar con una flechita
 
 17- cambiar el nombre de las categorias en ingresos.
 
 18- Sen configuración quitar los tres colores y poner configuración. en configuración habrá: colores editables, es decir el usuario edita la pagina visualmente, poder cambiar el tipo de moneda y poner cambiar el idioma.
+
+19- Notificaciones para saber que compraste una membresia, y recordatorio 3-5 días antes de que finalice la membresia para que el usuario sepa.
 

@@ -49,7 +49,7 @@ router.beforeEach((to, from, next) => {
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
-        plan = user.membresia?.plan || 'gratis';
+        plan = user.plan || user.membresia?.plan || 'gratis';
       } catch(e) {}
     }
     

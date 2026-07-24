@@ -8,6 +8,7 @@ use App\Models\Membresia;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
+use App\Models\HistorialPago;
 
 class PayPalController extends Controller
 {
@@ -151,6 +152,15 @@ class PayPalController extends Controller
                         'status' => 'active',
                     ]
                 );
+
+                HistorialPago::create([
+                    'user_id' => $user->id,
+                    'order_id' => $orderID,
+                    'monto' => $capturedAmount,
+                    'plan' => $plan,
+                    'billing_cycle' => $cycle,
+                    'status' => 'completed',
+                ]);
 
                 return response()->json(['success' => true]);
             }
